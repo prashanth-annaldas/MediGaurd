@@ -2,7 +2,6 @@ from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 from pydantic import BaseModel
 import pandas as pd
-from prophet import Prophet
 from datetime import datetime, timedelta
 import random
 
@@ -11,7 +10,7 @@ app = FastAPI()
 # ================= CORS =================
 app.add_middleware(
     CORSMiddleware,
-    allow_origins=["*"],
+    allow_origins=["https://medi-gaurd.vercel.app"],  # You can restrict to frontend URL later
     allow_credentials=True,
     allow_methods=["*"],
     allow_headers=["*"],
@@ -32,21 +31,17 @@ class Scenario(BaseModel):
     vent: float
     em: float
 
-
 # ================= ROOT =================
 @app.get("/")
 def home():
     return {"message": "Backend running 🚀"}
 
-
 # ================= TREND =================
 @app.get("/trend")
 def get_trend():
-
     trend = []
 
     for _, row in data.iterrows():
-
         beds = float(row["Bed_Occupancy_Rate"])
         icu = float(row["ICU_Occupancy_Rate"])
 
@@ -66,11 +61,9 @@ def get_trend():
 
     return trend
 
-
 # ================= CALCULATE HSI =================
 @app.post("/calculate")
 def calculate_hsi(data_input: Scenario):
-
     hsi = (
         0.35 * data_input.bed +
         0.25 * data_input.icu +
@@ -80,30 +73,9 @@ def calculate_hsi(data_input: Scenario):
 
     return {"hsi": round(hsi, 2)}
 
-
-# ================= HSI TREND FOR HEATMAP =================
-@app.get("/hsi_trend")
-def get_hsi_trend():
-
-    df = data.copy()
-
-    df["Emergency_Pressure"] = (
-        df["Emergency_Admissions"] /
-        df["Emergency_Admissions"].max()
-    ) * 100
-
-    df["HSI"] = (
-        0.35 * df["Bed_Occupancy_Rate"] +
-        0.25 * df["ICU_Occupancy_Rate"] +
-        0.20 * df["Ventilator_Utilization_Rate"] +
-        0.20 * df["Emergency_Pressure"]
-    )
-
-    return df[["Date", "HSI"]].to_dict(orient="records")
-
+# ================= FORECAST =================
 @app.get("/forecast")
 def forecast():
-
     last_beds = 70
     last_icu = 65
     last_vent = 60
