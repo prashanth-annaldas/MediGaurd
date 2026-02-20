@@ -1,5 +1,7 @@
 fastapi
 uvicorn[standard]
+pandas
+numpy
 python-multipart
 passlib[bcrypt]
 python-jose
