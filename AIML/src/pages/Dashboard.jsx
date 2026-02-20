@@ -9,18 +9,17 @@ import HSIGauge from "../components/HSIGauge";
 import ForecastChart from "../components/ForecastChart";
 
 export default function Dashboard() {
+  const BASE_URL = import.meta.env.VITE_API_URL;
+
   /* ================= STATES ================= */
 
-  // Original datasets
   const [history, setHistory] = useState([]);
   const [hsiTrend, setHsiTrend] = useState([]);
   const [forecastData, setForecastData] = useState([]);
 
-  // Filtered datasets
   const [filteredHistory, setFilteredHistory] = useState([]);
   const [filteredHSI, setFilteredHSI] = useState([]);
 
-  // Resource values
   const [beds, setBeds] = useState(0);
   const [icu, setIcu] = useState(0);
   const [ventilator, setVentilator] = useState(0);
@@ -30,7 +29,6 @@ export default function Dashboard() {
   const [tempIcu, setTempIcu] = useState(0);
   const [tempVentilator, setTempVentilator] = useState(0);
 
-  // Date ranges
   const [usageFrom, setUsageFrom] = useState("");
   const [usageTo, setUsageTo] = useState("");
 
@@ -47,48 +45,55 @@ export default function Dashboard() {
   /* ================= LOAD USAGE TREND ================= */
 
   useEffect(() => {
-  fetch("http://127.0.0.1:8000/trend")
-    .then(res => res.json())
-    .then(data => {
+    fetch(`${BASE_URL}/trend`)
+      .then(res => res.json())
+      .then(data => {
+        const formatted = data.map(item => ({
+          day: item.day,
+          beds: item.beds,
+          icu: item.icu,
+          ventilator: item.ventilator
+        }));
 
-      const formatted = data.map(item => ({
-        day: item.day || item.Date,
-        beds: item.beds || item.Beds,
-        icu: item.icu || item.ICU,
-        ventilator: item.ventilator || item.Vent
-      }));
-
-      setHistory(formatted);
-      setFilteredHistory(formatted);
-    });
-}, []);
+        setHistory(formatted);
+        setFilteredHistory(formatted);
+      })
+      .catch(err => console.error("Trend error:", err));
+  }, []);
 
   /* ================= LOAD HSI TREND ================= */
 
   useEffect(() => {
-    fetch("http://127.0.0.1:8000/hsi_trend")
-      .then((res) => res.json())
-      .then((data) => {
+    fetch(`${BASE_URL}/hsi_trend`)
+      .then(res => res.json())
+      .then(data => {
         setHsiTrend(data);
         setFilteredHSI(data);
-      });
+      })
+      .catch(err => console.error("HSI error:", err));
   }, []);
 
+  /* ================= LOAD FORECAST ================= */
+
   useEffect(() => {
-  fetch("http://127.0.0.1:8000/forecast")
-    .then(res => res.json())
-    .then(data => {
-      if (Array.isArray(data)) {
-        setForecastData(data);
-      }
-    })
-    .catch(err => console.error(err));
-}, []);
+    fetch(`${BASE_URL}/forecast`)
+      .then(res => res.json())
+      .then(data => {
+        if (Array.isArray(data)) {
+          setForecastData(data);
+        }
+      })
+      .catch(err => console.error("Forecast error:", err));
+  }, []);
 
   /* ================= AUTO CALCULATE HSI ================= */
 
   useEffect(() => {
-    const value = 0.35 * beds + 0.25 * icu + 0.2 * ventilator + 0.2 * 50;
+    const value =
+      0.35 * beds +
+      0.25 * icu +
+      0.2 * ventilator +
+      0.2 * 50;
 
     setHsi(Number(value.toFixed(2)));
   }, [beds, icu, ventilator]);
@@ -102,7 +107,7 @@ export default function Dashboard() {
     }
 
     const filtered = history.filter(
-      (row) => row.day >= usageFrom && row.day <= usageTo,
+      row => row.day >= usageFrom && row.day <= usageTo
     );
 
     setFilteredHistory(filtered);
@@ -117,7 +122,7 @@ export default function Dashboard() {
     }
 
     const filtered = hsiTrend.filter(
-      (row) => row.Date >= hsiFrom && row.Date <= hsiTo,
+      row => row.Date >= hsiFrom && row.Date <= hsiTo
     );
 
     setFilteredHSI(filtered);
@@ -138,42 +143,45 @@ export default function Dashboard() {
     setTempIcu(icuUsage);
     setTempVentilator(ventUsage);
 
-    setFilteredHistory((prev) => [
+    setFilteredHistory(prev => [
       ...prev,
       {
         day: "Manual",
         beds: bedsUsage,
         icu: icuUsage,
-        ventilator: ventUsage,
-      },
+        ventilator: ventUsage
+      }
     ]);
   };
 
-  const combinedUsage = [
-  ...filteredHistory,
-  ...forecastData.map(d => ({
-    day: d.ds,
-    beds: d.beds,
-    icu: d.icu,
-    ventilator: d.ventilator
-  }))
-];
+  /* ================= MERGE HISTORY + FORECAST ================= */
 
-// ===== Merge Past + Future for HSI =====
-const combinedHSI = [
-  ...filteredHSI,
-  ...forecastData.map(d => ({
-    Date: d.ds,
-    HSI: d.yhat
-  }))
-];
+  const combinedUsage = [
+    ...filteredHistory,
+    ...forecastData.map(d => ({
+      day: d.ds,
+      beds: d.beds,
+      icu: d.icu,
+      ventilator: d.ventilator
+    }))
+  ];
+
+  const combinedHSI = [
+    ...filteredHSI,
+    ...forecastData.map(d => ({
+      Date: d.ds,
+      HSI: d.yhat
+    }))
+  ];
+
   /* ================= UI ================= */
 
   return (
     <div className="min-h-screen bg-[#0b0f1a] text-white px-6 py-8">
-      <h1 className="text-4xl font-bold">Hospital Resource Dashboard</h1>
+      <h1 className="text-4xl font-bold">
+        Hospital Resource Dashboard
+      </h1>
 
-      {/* INPUT CARD */}
       <div className="mt-8">
         <InputCard
           inputs={inputs}
@@ -182,7 +190,6 @@ const combinedHSI = [
         />
       </div>
 
-      {/* RESOURCE CARDS */}
       <div className="grid md:grid-cols-3 gap-6 mt-10">
         <ResourceCard
           title="Beds Usage"
@@ -210,10 +217,8 @@ const combinedHSI = [
         />
       </div>
 
-      {/* GAUGE */}
       <HSIGauge value={hsi} />
 
-      {/* ALERT */}
       {hsi > 80 && (
         <div className="mt-4 text-red-500 font-bold animate-pulse">
           CRITICAL SHORTAGE RISK
@@ -230,82 +235,13 @@ const combinedHSI = [
         </div>
       )}
 
-      {/* USAGE FILTER */}
-      <div className="mt-10 bg-[#111827] p-6 rounded-2xl border border-gray-700">
-        <h2 className="text-xl font-semibold mb-4">Filter Usage Trend</h2>
-        <div className="grid md:grid-cols-3 gap-4">
-          <input
-            type="date"
-            value={usageFrom}
-            onChange={(e) => setUsageFrom(e.target.value)}
-            className="bg-gray-800 p-2 rounded"
-          />
-          <input
-            type="date"
-            value={usageTo}
-            onChange={(e) => setUsageTo(e.target.value)}
-            className="bg-gray-800 p-2 rounded"
-          />
-          <button
-            onClick={applyUsageFilter}
-            className="bg-purple-600 hover:bg-purple-700 p-2 rounded font-semibold"
-          >
-            Apply Range5
-          </button>
-        </div>
-      </div>
-
       <UsageChart history={combinedUsage} />
 
-      {/* HSI FILTER */}
-      <div className="mt-10 bg-[#111827] p-6 rounded-2xl border border-gray-700">
-        <h2 className="text-xl font-semibold mb-4">Filter HSI Trend</h2>
-        <div className="grid md:grid-cols-3 gap-4">
-          <input
-            type="date"
-            value={hsiFrom}
-            onChange={(e) => setHsiFrom(e.target.value)}
-            className="bg-gray-800 p-2 rounded"
-          />
-          <input
-            type="date"
-            value={hsiTo}
-            onChange={(e) => setHsiTo(e.target.value)}
-            className="bg-gray-800 p-2 rounded"
-          />
-          <button
-            onClick={applyHSIFilter}
-            className="bg-purple-600 hover:bg-purple-700 p-2 rounded font-semibold"
-          >
-            Apply Range
-          </button>
-        </div>
-      </div>
-
       <HSIChart data={combinedHSI} />
+
       <ForecastChart data={forecastData} />
-      <div className="grid md:grid-cols-5 gap-4 mt-6">
-        {forecastData.map((day, index) => (
-          <div
-            key={index}
-            className={`p-4 rounded-xl text-center ${
-              day.Risk_Level === "CRITICAL"
-                ? "bg-red-600"
-                : day.Risk_Level === "HIGH"
-                  ? "bg-orange-500"
-                  : "bg-green-500"
-            }`}
-          >
-            <div className="text-sm">
-              {new Date(day.ds).toLocaleDateString()}
-            </div>
-            <div className="text-2xl font-bold">{day.yhat.toFixed(1)}</div>
-            <div className="text-sm font-semibold">{day.Risk_Level}</div>
-          </div>
-        ))}
-      </div>
+
       <StressHeatmap data={forecastData} />
-      
     </div>
   );
 }
