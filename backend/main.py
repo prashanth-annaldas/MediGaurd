@@ -3,6 +3,8 @@ from fastapi.middleware.cors import CORSMiddleware
 from pydantic import BaseModel
 import pandas as pd
 from prophet import Prophet
+from datetime import datetime, timedelta
+import random
 
 app = FastAPI()
 
@@ -102,22 +104,20 @@ def get_hsi_trend():
 @app.get("/forecast")
 def forecast():
 
-    # Latest values (replace with real logic if needed)
     last_beds = 70
     last_icu = 65
     last_vent = 60
 
-    results = []
+    future = []
 
     for i in range(1, 6):
         future_date = (datetime.now() + timedelta(days=i)).strftime("%Y-%m-%d")
 
-        # Simple growth simulation
-        beds = min(100, last_beds + random.randint(1, 5))
-        icu = min(100, last_icu + random.randint(1, 4))
-        vent = min(100, last_vent + random.randint(1, 3))
+        beds = min(100, last_beds + random.randint(1, 4))
+        icu = min(100, last_icu + random.randint(1, 3))
+        ventilator = min(100, last_vent + random.randint(1, 2))
 
-        hsi = round(0.35 * beds + 0.25 * icu + 0.2 * vent + 0.2 * 50, 2)
+        hsi = round(0.35*beds + 0.25*icu + 0.2*ventilator + 0.2*50, 2)
 
         if hsi > 85:
             risk = "CRITICAL"
@@ -126,13 +126,13 @@ def forecast():
         else:
             risk = "NORMAL"
 
-        results.append({
+        future.append({
             "ds": future_date,
             "beds": beds,
             "icu": icu,
-            "ventilator": vent,
+            "ventilator": ventilator,
             "yhat": hsi,
             "Risk_Level": risk
         })
 
-    return results
+    return future

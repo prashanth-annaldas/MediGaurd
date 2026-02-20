@@ -149,6 +149,24 @@ export default function Dashboard() {
     ]);
   };
 
+  const combinedUsage = [
+  ...filteredHistory,
+  ...forecastData.map(d => ({
+    day: d.ds,
+    beds: d.beds,
+    icu: d.icu,
+    ventilator: d.ventilator
+  }))
+];
+
+// ===== Merge Past + Future for HSI =====
+const combinedHSI = [
+  ...filteredHSI,
+  ...forecastData.map(d => ({
+    Date: d.ds,
+    HSI: d.yhat
+  }))
+];
   /* ================= UI ================= */
 
   return (
@@ -237,7 +255,7 @@ export default function Dashboard() {
         </div>
       </div>
 
-      <UsageChart history={filteredHistory} />
+      <UsageChart history={combinedUsage} />
 
       {/* HSI FILTER */}
       <div className="mt-10 bg-[#111827] p-6 rounded-2xl border border-gray-700">
@@ -264,7 +282,7 @@ export default function Dashboard() {
         </div>
       </div>
 
-      <HSIChart data={filteredHSI} />
+      <HSIChart data={combinedHSI} />
       <ForecastChart data={forecastData} />
       <div className="grid md:grid-cols-5 gap-4 mt-6">
         {forecastData.map((day, index) => (
@@ -286,7 +304,7 @@ export default function Dashboard() {
           </div>
         ))}
       </div>
-      <StressHeatmap data={filteredHSI} />
+      <StressHeatmap data={forecastData} />
       
     </div>
   );
