@@ -2,6 +2,7 @@ fastapi
 uvicorn[standard]
 pandas
 numpy
+prophet
 python-multipart
 passlib[bcrypt]
 python-jose
