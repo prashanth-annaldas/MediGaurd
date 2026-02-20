@@ -1,4 +1,5 @@
 const BASE_URL = import.meta.env.VITE_API_URL;
+console.log(import.meta.env.VITE_API_URL)
 
 // 🔹 Common fetch wrapper
 const request = async (endpoint, options = {}) => {
