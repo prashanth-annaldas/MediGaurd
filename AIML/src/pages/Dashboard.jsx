@@ -17,17 +17,10 @@ export default function Dashboard() {
   const [hsiTrend, setHsiTrend] = useState([]);
   const [forecastData, setForecastData] = useState([]);
 
-  const [filteredHistory, setFilteredHistory] = useState([]);
-  const [filteredHSI, setFilteredHSI] = useState([]);
-
   const [beds, setBeds] = useState(0);
   const [icu, setIcu] = useState(0);
   const [ventilator, setVentilator] = useState(0);
   const [hsi, setHsi] = useState(0);
-
-  const [tempBeds, setTempBeds] = useState(0);
-  const [tempIcu, setTempIcu] = useState(0);
-  const [tempVentilator, setTempVentilator] = useState(0);
 
   const [usageFrom, setUsageFrom] = useState("");
   const [usageTo, setUsageTo] = useState("");
@@ -42,48 +35,23 @@ export default function Dashboard() {
     return isNaN(n) ? 0 : n;
   };
 
-  /* ================= LOAD USAGE TREND ================= */
+  /* ================= LOAD INITIAL DATA ================= */
 
   useEffect(() => {
     fetch(`${BASE_URL}/trend`)
-      .then(res => res.json())
-      .then(data => {
-        const formatted = data.map(item => ({
-          day: item.day,
-          beds: item.beds,
-          icu: item.icu,
-          ventilator: item.ventilator
-        }));
+      .then((res) => res.json())
+      .then((data) => setHistory(data))
+      .catch((err) => console.error("Trend error:", err));
 
-        setHistory(formatted);
-        setFilteredHistory(formatted);
-      })
-      .catch(err => console.error("Trend error:", err));
-  }, []);
-
-  /* ================= LOAD HSI TREND ================= */
-
-  useEffect(() => {
     fetch(`${BASE_URL}/hsi_trend`)
-      .then(res => res.json())
-      .then(data => {
-        setHsiTrend(data);
-        setFilteredHSI(data);
-      })
-      .catch(err => console.error("HSI error:", err));
-  }, []);
+      .then((res) => res.json())
+      .then((data) => setHsiTrend(data))
+      .catch((err) => console.error("HSI error:", err));
 
-  /* ================= LOAD FORECAST ================= */
-
-  useEffect(() => {
     fetch(`${BASE_URL}/forecast`)
-      .then(res => res.json())
-      .then(data => {
-        if (Array.isArray(data)) {
-          setForecastData(data);
-        }
-      })
-      .catch(err => console.error("Forecast error:", err));
+      .then((res) => res.json())
+      .then((data) => setForecastData(data))
+      .catch((err) => console.error("Forecast error:", err));
   }, []);
 
   /* ================= AUTO CALCULATE HSI ================= */
@@ -98,35 +66,31 @@ export default function Dashboard() {
     setHsi(Number(value.toFixed(2)));
   }, [beds, icu, ventilator]);
 
-  /* ================= USAGE FILTER ================= */
+  /* ================= USAGE DATE FILTER ================= */
 
-  const applyUsageFilter = () => {
-    if (!usageFrom || !usageTo) {
-      alert("Select both usage dates");
-      return;
+  useEffect(() => {
+    if (usageFrom && usageTo) {
+      fetch(
+        `${BASE_URL}/trend?from_date=${usageFrom}&to_date=${usageTo}`
+      )
+        .then((res) => res.json())
+        .then((data) => setHistory(data))
+        .catch((err) => console.error("Usage filter error:", err));
     }
+  }, [usageFrom, usageTo]);
 
-    const filtered = history.filter(
-      row => row.day >= usageFrom && row.day <= usageTo
-    );
+  /* ================= HSI DATE FILTER ================= */
 
-    setFilteredHistory(filtered);
-  };
-
-  /* ================= HSI FILTER ================= */
-
-  const applyHSIFilter = () => {
-    if (!hsiFrom || !hsiTo) {
-      alert("Select both HSI dates");
-      return;
+  useEffect(() => {
+    if (hsiFrom && hsiTo) {
+      fetch(
+        `${BASE_URL}/hsi_trend?from_date=${hsiFrom}&to_date=${hsiTo}`
+      )
+        .then((res) => res.json())
+        .then((data) => setHsiTrend(data))
+        .catch((err) => console.error("HSI filter error:", err));
     }
-
-    const filtered = hsiTrend.filter(
-      row => row.Date >= hsiFrom && row.Date <= hsiTo
-    );
-
-    setFilteredHSI(filtered);
-  };
+  }, [hsiFrom, hsiTo]);
 
   /* ================= MANUAL INPUT UPDATE ================= */
 
@@ -139,39 +103,35 @@ export default function Dashboard() {
     setIcu(icuUsage);
     setVentilator(ventUsage);
 
-    setTempBeds(bedsUsage);
-    setTempIcu(icuUsage);
-    setTempVentilator(ventUsage);
-
-    setFilteredHistory(prev => [
+    setHistory((prev) => [
       ...prev,
       {
         day: "Manual",
         beds: bedsUsage,
         icu: icuUsage,
-        ventilator: ventUsage
-      }
+        ventilator: ventUsage,
+      },
     ]);
   };
 
   /* ================= MERGE HISTORY + FORECAST ================= */
 
   const combinedUsage = [
-    ...filteredHistory,
-    ...forecastData.map(d => ({
+    ...history,
+    ...forecastData.map((d) => ({
       day: d.ds,
       beds: d.beds,
       icu: d.icu,
-      ventilator: d.ventilator
-    }))
+      ventilator: d.ventilator,
+    })),
   ];
 
   const combinedHSI = [
-    ...filteredHSI,
-    ...forecastData.map(d => ({
-      Date: d.ds,
-      HSI: d.yhat
-    }))
+    ...hsiTrend,
+    ...forecastData.map((d) => ({
+      day: d.ds,
+      HSI: d.yhat,
+    })),
   ];
 
   /* ================= UI ================= */
@@ -182,6 +142,7 @@ export default function Dashboard() {
         Hospital Resource Dashboard
       </h1>
 
+      {/* ================= INPUT SECTION ================= */}
       <div className="mt-8">
         <InputCard
           inputs={inputs}
@@ -190,33 +151,29 @@ export default function Dashboard() {
         />
       </div>
 
+      {/* ================= RESOURCE CARDS ================= */}
       <div className="grid md:grid-cols-3 gap-6 mt-10">
         <ResourceCard
           title="Beds Usage"
-          tempValue={tempBeds}
-          setTempValue={setTempBeds}
           actualValue={beds}
           icon={BedDouble}
           color="bg-yellow-500"
         />
         <ResourceCard
           title="ICU Usage"
-          tempValue={tempIcu}
-          setTempValue={setTempIcu}
           actualValue={icu}
           icon={HeartPulse}
           color="bg-orange-500"
         />
         <ResourceCard
           title="Ventilator Usage"
-          tempValue={tempVentilator}
-          setTempValue={setTempVentilator}
           actualValue={ventilator}
           icon={Wind}
           color="bg-blue-500"
         />
       </div>
 
+      {/* ================= HSI GAUGE ================= */}
       <HSIGauge value={hsi} />
 
       {hsi > 80 && (
@@ -235,10 +192,57 @@ export default function Dashboard() {
         </div>
       )}
 
+      {/* ================= USAGE DATE RANGE ================= */}
+      <div className="mt-10 flex gap-4 items-center">
+        <div>
+          <label className="text-sm">Usage From</label>
+          <input
+            type="date"
+            value={usageFrom}
+            onChange={(e) => setUsageFrom(e.target.value)}
+            className="ml-2 text-black p-1 rounded"
+          />
+        </div>
+
+        <div>
+          <label className="text-sm">Usage To</label>
+          <input
+            type="date"
+            value={usageTo}
+            onChange={(e) => setUsageTo(e.target.value)}
+            className="ml-2 text-black p-1 rounded"
+          />
+        </div>
+      </div>
+
       <UsageChart history={combinedUsage} />
+
+      {/* ================= HSI DATE RANGE ================= */}
+      <div className="mt-10 flex gap-4 items-center">
+        <div>
+          <label className="text-sm">HSI From</label>
+          <input
+            type="date"
+            value={hsiFrom}
+            onChange={(e) => setHsiFrom(e.target.value)}
+            className="ml-2 text-black p-1 rounded"
+          />
+        </div>
+
+        <div>
+          <label className="text-sm">HSI To</label>
+          <input
+            type="date"
+            value={hsiTo}
+            onChange={(e) => setHsiTo(e.target.value)}
+            className="ml-2 text-black p-1 rounded"
+          />
+        </div>
+      </div>
 
       <HSIChart data={combinedHSI} />
 
+      {/* ================= FORECAST ================= */}
       <ForecastChart data={forecastData} />
 
       <StressHeatmap data={forecastData} />
