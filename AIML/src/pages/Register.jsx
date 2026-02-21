@@ -11,6 +11,8 @@ export default function Register() {
     password: "",
   });
 
+  const API_URL = import.meta.env.VITE_API_URL;
+
   const handleChange = (e) => {
     setForm({ ...form, [e.target.name]: e.target.value });
   };
@@ -19,18 +21,18 @@ export default function Register() {
     e.preventDefault();
 
     try {
-      await axios.post(
-        "https://your-backend-url.onrender.com/register",
+      const res = await axios.post(
+        `${API_URL}/register`,
         form
       );
 
-      alert("Registered Successfully!");
-
-      // ✅ Navigate to login page
+      alert(res.data.message || "Registered Successfully!");
       navigate("/login");
 
     } catch (err) {
-      alert("Error: Email already exists");
+      alert(
+        err.response?.data?.detail || "Registration failed"
+      );
     }
   };
 
@@ -45,6 +47,7 @@ export default function Register() {
           placeholder="Name"
           onChange={handleChange}
           required
+          autoComplete="name"
         />
 
         <input
@@ -53,6 +56,7 @@ export default function Register() {
           placeholder="Email"
           onChange={handleChange}
           required
+          autoComplete="email"
         />
 
         <input
@@ -61,6 +65,7 @@ export default function Register() {
           placeholder="Password"
           onChange={handleChange}
           required
+          autoComplete="new-password"
         />
 
         <button type="submit">Register</button>
