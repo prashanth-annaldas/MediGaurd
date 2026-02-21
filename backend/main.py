@@ -9,8 +9,7 @@ app = FastAPI()
 
 # ================= CORS =================
 origins = [
-    "https://medi-gaurd.vercel.app",
-    "http://localhost:5173",  # for local testing
+    "https://medi-gaurd.vercel.app" # for local testing
 ]
 
 app.add_middleware(
@@ -113,3 +112,21 @@ def forecast():
         })
 
     return future
+
+@app.get("/hsi_trend")
+def get_hsi_trend():
+    df = load_data()
+
+    df["Emergency_Pressure"] = (
+        df["Emergency_Admissions"] /
+        df["Emergency_Admissions"].max()
+    ) * 100
+
+    df["HSI"] = (
+        0.35 * df["Bed_Occupancy_Rate"] +
+        0.25 * df["ICU_Occupancy_Rate"] +
+        0.20 * df["Ventilator_Utilization_Rate"] +
+        0.20 * df["Emergency_Pressure"]
+    )
+
+    return df[["Date", "HSI"]].to_dict(orient="records")
