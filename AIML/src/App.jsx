@@ -1,7 +1,50 @@
+import { BrowserRouter, Routes, Route, Navigate } from "react-router-dom";
+import Signup from "./pages/Signup";
+import Login from "./pages/Login";
 import Dashboard from "./pages/Dashboard";
 
-function App() {
-  return <Dashboard />;
+// Protect Dashboard route
+function ProtectedRoute({ children }) {
+  const token = localStorage.getItem("token");
+  return token ? children : <Navigate to="/login" />;
 }
 
-export default App;
+export default function App() {
+  const token = localStorage.getItem("token");
+
+  return (
+    <BrowserRouter>
+      <Routes>
+
+        {/* Default route */}
+        <Route
+          path="/"
+          element={<Navigate to={token ? "/dashboard" : "/signup"} />}
+        />
+
+        {/* Signup */}
+        <Route
+          path="/signup"
+          element={token ? <Navigate to="/dashboard" /> : <Signup />}
+        />
+
+        {/* Login */}
+        <Route
+          path="/login"
+          element={token ? <Navigate to="/dashboard" /> : <Login />}
+        />
+
+        {/* Dashboard (Protected) */}
+        <Route
+          path="/dashboard"
+          element={
+            <ProtectedRoute>
+              <Dashboard />
+            </ProtectedRoute>
+          }
+        />
+
+      </Routes>
+    </BrowserRouter>
+  );
+}

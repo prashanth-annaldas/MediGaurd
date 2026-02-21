@@ -1,7 +1,6 @@
 const BASE_URL = import.meta.env.VITE_API_URL;
-console.log(import.meta.env.VITE_API_URL)
 
-// 🔹 Common fetch wrapper
+// Common request wrapper
 const request = async (endpoint, options = {}) => {
   const token = localStorage.getItem("token");
 
@@ -13,45 +12,43 @@ const request = async (endpoint, options = {}) => {
     ...options,
   };
 
-  try {
-    const res = await fetch(`${BASE_URL}${endpoint}`, config);
+  const res = await fetch(`${BASE_URL}${endpoint}`, config);
 
-    // 🔥 If token expired or invalid → redirect to login
-    if (res.status === 401) {
-      localStorage.removeItem("token");
-      window.location.href = "/login";
-      return;
-    }
-
-    if (!res.ok) {
-      const errorData = await res.json();
-      throw new Error(errorData.detail || "Something went wrong");
-    }
-
-    return await res.json();
-  } catch (error) {
-    console.error("API Error:", error.message);
-    throw error;
+  if (res.status === 401) {
+    localStorage.removeItem("token");
+    window.location.href = "/login";
+    return;
   }
+
+  if (!res.ok) {
+    throw new Error("API Error");
+  }
+
+  return res.json();
 };
 
-
-// =============================
-// 📊 GET Trend
-// =============================
-export const getTrend = () => {
-  return request("/trend", {
-    method: "GET",
+// ===== Auth APIs =====
+export const signupUser = (data) => {
+  return request("/register", {
+    method: "POST",
+    body: JSON.stringify(data),
   });
 };
 
+export const loginUser = (data) => {
+  return request("/login", {
+    method: "POST",
+    body: JSON.stringify(data),
+  });
+};
 
-// =============================
-// 🧠 POST Calculate HSI
-// =============================
-export const calculateHSI = (payload) => {
-  return request("/calculate", {
+// ===== Dashboard APIs =====
+export const getTrend = () => request("/trend");
+export const getHSITrend = () => request("/hsi_trend");
+export const getForecast = () => request("/forecast");
+
+export const calculateHSI = (payload) =>
+  request("/calculate", {
     method: "POST",
     body: JSON.stringify(payload),
   });
-};
