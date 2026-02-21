@@ -19,12 +19,12 @@ export default function App() {
         {/* Default route */}
         <Route
           path="/"
-          element={<Navigate to={token ? "/dashboard" : "/signup"} />}
+          element={<Navigate to={token ? "/dashboard" : "/register"} />}
         />
 
         {/* Signup */}
         <Route
-          path="/signup"
+          path="/register"
           element={token ? <Navigate to="/dashboard" /> : <Signup />}
         />
 
