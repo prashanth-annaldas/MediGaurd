@@ -8,9 +8,14 @@ import random
 app = FastAPI()
 
 # ================= CORS =================
+origins = [
+    "https://medi-gaurd.vercel.app",
+    "http://localhost:5173",  # for local testing
+]
+
 app.add_middleware(
     CORSMiddleware,
-    allow_origins=["https://medi-gaurd.vercel.app"],  # You can restrict to frontend URL later
+    allow_origins=origins,
     allow_credentials=True,
     allow_methods=["*"],
     allow_headers=["*"],
