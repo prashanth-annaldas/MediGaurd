@@ -4,6 +4,7 @@ from pydantic import BaseModel
 import pandas as pd
 from datetime import datetime, timedelta
 import random
+from fastapi import HTTPException
 
 app = FastAPI()
 
@@ -132,3 +133,37 @@ def get_hsi_trend():
     df["Date"] = df["Date"].dt.strftime("%Y-%m-%d")
 
     return df[["Date", "HSI"]].to_dict(orient="records")
+
+# ================= AUTH =================
+
+class User(BaseModel):
+    email: str
+    password: str
+    name: str | None = None
+
+
+fake_users_db = {}
+
+
+@app.post("/register")
+def register(user: User):
+    if user.email in fake_users_db:
+        raise HTTPException(status_code=400, detail="User already exists")
+
+    fake_users_db[user.email] = {
+        "name": user.name,
+        "password": user.password
+    }
+
+    return {"message": "User registered successfully"}
+
+
+@app.post("/login")
+def login(user: User):
+    if user.email not in fake_users_db:
+        raise HTTPException(status_code=400, detail="User not found")
+
+    if fake_users_db[user.email]["password"] != user.password:
+        raise HTTPException(status_code=400, detail="Invalid credentials")
+
+    return {"access_token": "dummy_token_123"}
