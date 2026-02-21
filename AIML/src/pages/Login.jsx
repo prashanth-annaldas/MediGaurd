@@ -4,6 +4,7 @@ import { useNavigate } from "react-router-dom";
 
 export default function Login() {
   const navigate = useNavigate();
+  const API_URL = import.meta.env.VITE_API_URL;
 
   const [form, setForm] = useState({
     email: "",
@@ -19,20 +20,15 @@ export default function Login() {
 
     try {
       const res = await axios.post(
-        "https://your-backend-url.onrender.com/login",
+        `${API_URL}/login`,
         form
       );
 
-      // ✅ Store token
-      localStorage.setItem("token", res.data.token);
-
-      alert("Login Successful!");
-
-      // ✅ Navigate to dashboard
+      localStorage.setItem("token", res.data.access_token);
       navigate("/dashboard");
 
     } catch (err) {
-      alert("Invalid credentials");
+      alert(err.response?.data?.detail || "Login failed");
     }
   };
 
@@ -47,6 +43,7 @@ export default function Login() {
           placeholder="Email"
           onChange={handleChange}
           required
+          autoComplete="email"
         />
 
         <input
@@ -55,6 +52,7 @@ export default function Login() {
           placeholder="Password"
           onChange={handleChange}
           required
+          autoComplete="current-password"
         />
 
         <button type="submit">Login</button>
