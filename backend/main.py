@@ -129,4 +129,6 @@ def get_hsi_trend():
         0.20 * df["Emergency_Pressure"]
     )
 
+    df["Date"] = df["Date"].dt.strftime("%Y-%m-%d")
+
     return df[["Date", "HSI"]].to_dict(orient="records")
