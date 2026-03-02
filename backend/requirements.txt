@@ -1,9 +1,0 @@
-fastapi
-uvicorn[standard]
-pandas
-numpy
-prophet
-python-multipart
-passlib[bcrypt]
-python-jose
-bcrypt==4.0.1
