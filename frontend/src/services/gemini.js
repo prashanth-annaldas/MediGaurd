@@ -1,4 +1,4 @@
-const BACKEND_URL = `${import.meta.env.VITE_API_URL || 'http://localhost:8000'}/api/gemini/chat`
+const BACKEND_URL = `${import.meta.env.VITE_API_URL || `${import.meta.env.VITE_API_URL || 'http://localhost:8000'}`}/api/gemini/chat`
 
 export async function askGemini(message, context = null, history = []) {
     try {

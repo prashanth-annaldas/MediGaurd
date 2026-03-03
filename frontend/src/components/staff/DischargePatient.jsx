@@ -14,7 +14,7 @@ export default function DischargePatient() {
 
         setStatus('processing');
         try {
-            const res = await fetch(`${import.meta.env.VITE_API_URL || 'http://localhost:8000'}/api/hospitals/discharge`, {
+            const res = await fetch(`${import.meta.env.VITE_API_URL || `${import.meta.env.VITE_API_URL || 'http://localhost:8000'}`}/api/hospitals/discharge`, {
                 method: 'POST',
                 headers: {
                     'Content-Type': 'application/json',
