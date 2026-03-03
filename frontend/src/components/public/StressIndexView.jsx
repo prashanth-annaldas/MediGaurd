@@ -9,7 +9,7 @@ export default function StressIndexView() {
     const fetchStressIndex = async () => {
         setLoading(true);
         try {
-            const res = await fetch(`${import.meta.env.VITE_API_URL || `${import.meta.env.VITE_API_URL || 'https://medigaurd1-fzd9.onrender.com'}`}/api/stress-index`);
+            const res = await fetch(`${import.meta.env.VITE_API_URL || 'https://medigaurd1-fzd9.onrender.com'}/api/stress-index`);
             if (!res.ok) throw new Error('Failed to fetch data');
             const result = await res.json();
             setData(result);
