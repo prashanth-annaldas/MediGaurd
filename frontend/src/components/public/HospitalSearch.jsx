@@ -40,7 +40,7 @@ const HospitalSearch = () => {
     const fetchHospitals = async () => {
         setLoading(true);
         try {
-            const url = `http://localhost:8000/api/hospitals?search=${searchQuery}&sort_by=${sortBy}`;
+            const url = `${import.meta.env.VITE_API_URL || 'http://localhost:8000'}/api/hospitals?search=${searchQuery}&sort_by=${sortBy}`;
             const response = await fetch(url);
             const data = await response.json();
             setHospitals(data);
