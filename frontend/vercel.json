@@ -2,7 +2,7 @@
     "rewrites": [
         {
             "source": "/api/(.*)",
-            "destination": "YOUR_RENDER_BACKEND_URL/api/$1"
+            "destination": "https://medigaurd1-fzd9.onrender.com/api/$1"
         },
         {
             "source": "/(.*)",
