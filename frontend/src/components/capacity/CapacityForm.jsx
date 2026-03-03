@@ -51,7 +51,7 @@ export default function CapacityForm() {
         setSuccess(false);
 
         try {
-            const res = await fetch(`${import.meta.env.VITE_API_URL || `${import.meta.env.VITE_API_URL || 'http://localhost:8000'}`}/api/capacity`, {
+            const res = await fetch(`${import.meta.env.VITE_API_URL || `${import.meta.env.VITE_API_URL || 'https://medigaurd1-fzd9.onrender.com'}`}/api/capacity`, {
                 method: 'POST',
                 headers: {
                     'Content-Type': 'application/json',
