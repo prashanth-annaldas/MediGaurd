@@ -66,7 +66,7 @@ ml_model.load_and_train_model()
 
 app.add_middleware(
     CORSMiddleware,
-    allow_origins=["http://localhost:5173", "http://localhost:3000", "*"],
+    allow_origins=["http://localhost:5173", "http://localhost:5174", "http://localhost:3000", "http://127.0.0.1:5173", "http://127.0.0.1:5174"],
     allow_credentials=True,
     allow_methods=["*"],
     allow_headers=["*"],
@@ -78,18 +78,18 @@ try:
     GEMINI_API_KEY = os.getenv("GEMINI_API_KEY")
     if GEMINI_API_KEY and not GEMINI_API_KEY.startswith("your_"):
         genai.configure(api_key=GEMINI_API_KEY)
-        # Try models in order of preference
-        models_to_try = ["gemini-3-flash-preview", "gemini-2.5-flash-lite", "gemini-1.5-flash"]
+        # Try newer models explicitly supported by this key
+        models_to_try = ["gemini-2.5-flash", "gemini-2.0-flash", "gemini-3-flash-preview"]
         gemini_model = None
         for m_name in models_to_try:
             try:
-                # Verifying if the model ID is valid for the current key
-                model_info = genai.get_model(f"models/{m_name}")
+                # Basic initialization - skipping ping check to avoid eating quota at startup
                 gemini_model = genai.GenerativeModel(m_name)
-                print(f"🤖 MedGuard AI: Using Gemini model {m_name}")
+                print(f"🤖 MedGuard AI: Gemini model {m_name} ready.")
                 break
             except Exception as e:
-                print(f"DEBUG: Model {m_name} not available: {e}")
+                print(f"DEBUG: Model {m_name} initialization failure: {e}")
+                gemini_model = None
                 continue
         
         GEMINI_AVAILABLE = gemini_model is not None
@@ -133,11 +133,17 @@ def get_utilization(resource_id: str, noise: float = 2.0) -> float:
         return 0.0
 
     base = SEED_UTILIZATIONS.get(resource_id, 60.0)
-    hour = datetime.datetime.now().hour
+    now = datetime.datetime.now()
+    time_val = now.hour + now.minute / 60.0
+    
     # Day-of-week + hour cycle effect
-    daily_cycle = math.sin((hour - 6) * math.pi / 12) * 4
-    variation = random.uniform(-noise, noise)
-    return round(min(100.0, max(0.0, base + daily_cycle + variation)), 1)
+    daily_cycle = math.sin((time_val - 6) * math.pi / 12) * 4
+    
+    # Smooth pseudo-noise based on 10-minute intervals
+    seed_val = sum(ord(c) for c in resource_id)
+    pseudo_noise = math.sin(time_val * 6 + seed_val) * noise
+    
+    return round(min(100.0, max(0.0, base + daily_cycle + pseudo_noise)), 1)
 
 def calculate_trend(resource_id: str) -> str:
     base = SEED_UTILIZATIONS.get(resource_id, 60.0)
@@ -253,13 +259,116 @@ class CapacityInputMode(BaseModel):
     ventilators_occupied: int
 
 @app.post("/api/capacity")
-def update_capacity(data: CapacityInputMode, current_user: models.User = Depends(auth.get_current_staff_user)):
-    """Update live capacity and occupied numbers."""
+def update_capacity(data: CapacityInputMode, db: Session = Depends(get_db), current_user: models.User = Depends(auth.get_current_staff_user)):
+    """Update live capacity and occupied numbers in DB."""
+    hospital_name = current_user.hospital_name
+    if not hospital_name:
+        raise HTTPException(status_code=400, detail="User not associated with a hospital")
+    
+    hospital = db.query(models.Hospital).filter(models.Hospital.name == hospital_name).first()
+    if not hospital:
+        raise HTTPException(status_code=404, detail=f"Hospital '{hospital_name}' not found")
+
+    # Update total capacities
+    hospital.total_beds = data.beds_capacity
+    hospital.icu_total = data.icu_capacity
+    hospital.ventilators_total = data.ventilators_capacity
+
+    # Update available counts (Capacity - Occupied)
+    hospital.available_beds = max(0, data.beds_capacity - data.beds_occupied)
+    hospital.icu_available = max(0, data.icu_capacity - data.icu_occupied)
+    hospital.ventilators_available = max(0, data.ventilators_capacity - data.ventilators_occupied)
+
+    db.commit()
+    
+    # Also update the legacy LIVE_DATA simulation for fallback/legacy compatibility
     global LIVE_DATA
     LIVE_DATA["beds"] = {"capacity": data.beds_capacity, "occupied": data.beds_occupied}
     LIVE_DATA["icu_beds"] = {"capacity": data.icu_capacity, "occupied": data.icu_occupied}
     LIVE_DATA["ventilators"] = {"capacity": data.ventilators_capacity, "occupied": data.ventilators_occupied}
-    return {"message": "Capacity successfully updated", "data": LIVE_DATA}
+    
+    return {"message": "Capacity successfully updated in database", "hospital": hospital_name}
+
+class QRScanData(BaseModel):
+    qr_data: str
+
+@app.post("/api/hospitals/admit")
+def admit_patient(data: QRScanData, db: Session = Depends(get_db), current_user: models.User = Depends(auth.get_current_staff_user)):
+    """Increment bed occupancy (decrement available beds) on patient admission."""
+    hospital_name = current_user.hospital_name
+    if not hospital_name:
+        raise HTTPException(status_code=400, detail="Current user is not associated with any hospital. Please update user profile.")
+        
+    hospital = db.query(models.Hospital).filter(models.Hospital.name == hospital_name).first()
+    
+    if not hospital:
+        raise HTTPException(status_code=404, detail=f"Hospital '{hospital_name}' not found in database. Please check for name mismatch.")
+    
+    if hospital.available_beds <= 0:
+        raise HTTPException(status_code=400, detail="No beds available for admission")
+    
+    hospital.available_beds -= 1
+    
+    # Create notification alert
+    occ = hospital.total_beds - hospital.available_beds
+    util = (occ / hospital.total_beds) * 100 if hospital.total_beds > 0 else 0
+    alert_id = f"admit_{int(datetime.datetime.utcnow().timestamp())}_{random.randint(100, 999)}"
+    
+    new_alert = models.Alert(
+        id=alert_id,
+        resource="General Beds",
+        resource_id="beds",
+        severity="info",
+        message=f"Patient Admitted: Occupancy now {occ}/{hospital.total_beds}",
+        utilization=str(round(util, 1)),
+        trend="rising",
+        recommendations=json.dumps(["Monitor resource flow", "Check staffing levels"]),
+        created_at=datetime.datetime.utcnow().isoformat() + "Z",
+        hospital_name=hospital_name
+    )
+    db.add(new_alert)
+    db.commit()
+    
+    return {"message": "Patient admitted successfully", "available_beds": hospital.available_beds, "hospital": hospital_name}
+
+@app.post("/api/hospitals/discharge")
+def discharge_patient(data: QRScanData, db: Session = Depends(get_db), current_user: models.User = Depends(auth.get_current_staff_user)):
+    """Decrement bed occupancy (increment available beds) on patient discharge."""
+    hospital_name = current_user.hospital_name
+    if not hospital_name:
+        raise HTTPException(status_code=400, detail="Current user is not associated with any hospital. Please update user profile.")
+
+    hospital = db.query(models.Hospital).filter(models.Hospital.name == hospital_name).first()
+    
+    if not hospital:
+        raise HTTPException(status_code=404, detail=f"Hospital '{hospital_name}' not found in database. Please check for name mismatch.")
+    
+    if hospital.available_beds >= hospital.total_beds:
+        raise HTTPException(status_code=400, detail="All beds are already available (nothing to discharge)")
+    
+    hospital.available_beds += 1
+    
+    # Create notification alert
+    occ = hospital.total_beds - hospital.available_beds
+    util = (occ / hospital.total_beds) * 100 if hospital.total_beds > 0 else 0
+    alert_id = f"discharge_{int(datetime.datetime.utcnow().timestamp())}_{random.randint(100, 999)}"
+    
+    new_alert = models.Alert(
+        id=alert_id,
+        resource="General Beds",
+        resource_id="beds",
+        severity="info",
+        message=f"Patient Discharged: Occupancy now {occ}/{hospital.total_beds}",
+        utilization=str(round(util, 1)),
+        trend="falling",
+        recommendations=json.dumps(["Sterilize bed area", "Ready for next patient"]),
+        created_at=datetime.datetime.utcnow().isoformat() + "Z",
+        hospital_name=hospital_name
+    )
+    db.add(new_alert)
+    db.commit()
+    
+    return {"message": "Patient discharged successfully", "available_beds": hospital.available_beds, "hospital": hospital_name}
 
 @app.get("/api/stress-index")
 def get_stress_index():
@@ -317,6 +426,12 @@ class HospitalSeed(BaseModel):
     ventilators_total: int
     ventilators_available: int
     specialties: List[str]
+    doctors: List[dict] = []
+    rating_count: int = 0
+    fee_min: int = 500
+    fee_max: int = 800
+    total_doctors: int = 10
+    open_24x7: int = 1
 
 class HospitalResponse(BaseModel):
     id: int
@@ -333,6 +448,12 @@ class HospitalResponse(BaseModel):
     ventilators_total: int
     ventilators_available: int
     specialties: List[str]
+    doctors: List[dict] = []
+    rating_count: int
+    fee_min: int
+    fee_max: int
+    total_doctors: int
+    open_24x7: int
 
     class Config:
         from_attributes = True
@@ -521,7 +642,7 @@ def get_forecast(horizon_hours: int = 168, resource_id: str = "icu_beds"):
     }
 
 @app.get("/api/trends")
-def get_trends():
+def get_trends(hospital_id: Optional[int] = None, hospital_name: Optional[str] = None, db: Session = Depends(get_db)):
     """12-month aggregated trend data for seasonal pattern analysis."""
     months = ["Feb '25", "Mar", "Apr", "May", "Jun", "Jul", "Aug", "Sep", "Oct", "Nov", "Dec", "Jan '26"]
     resources_trend = {}
@@ -598,7 +719,13 @@ def get_hospitals(
             "icu_available": h.icu_available,
             "ventilators_total": h.ventilators_total,
             "ventilators_available": h.ventilators_available,
-            "specialties": h.specialties.split(",") if h.specialties else []
+            "specialties": h.specialties.split(",") if h.specialties else [],
+            "doctors": json.loads(h.doctors) if h.doctors else [],
+            "rating_count": h.rating_count,
+            "fee_min": h.fee_min,
+            "fee_max": h.fee_max,
+            "total_doctors": h.total_doctors,
+            "open_24x7": h.open_24x7
         }
         results.append(h_dict)
 
@@ -627,7 +754,13 @@ def seed_hospital(data: List[HospitalSeed], db: Session = Depends(get_db)):
                 icu_available=h.icu_available,
                 ventilators_total=h.ventilators_total,
                 ventilators_available=h.ventilators_available,
-                specialties=",".join(h.specialties)
+                specialties=",".join(h.specialties),
+                doctors=json.dumps(h.doctors),
+                rating_count=h.rating_count,
+                fee_min=h.fee_min,
+                fee_max=h.fee_max,
+                total_doctors=h.total_doctors,
+                open_24x7=h.open_24x7
             ))
         db.add_all(new_hospitals)
         db.commit()
@@ -643,6 +776,7 @@ def seed_hospital(data: List[HospitalSeed], db: Session = Depends(get_db)):
 class ChatRequest(BaseModel):
     message: str
     context: Optional[dict] = None
+    history: Optional[List[dict]] = None
 
 SYSTEM_CONTEXT = """You are MedGuard AI, an intelligent hospital resource management assistant.
 You help hospital administrators make data-driven decisions about resource allocation to prevent shortages.
@@ -659,14 +793,24 @@ Key principles:
 - You give 18-31 hour early warning before shortages based on provided data.
 - Every recommendation must be tied to specific data points.
 
-Current hospital context will be provided with each question.
-Always respond as a concise, expert hospital operations advisor in 3-5 bullet points maximum.
-Start responses with the most urgent action first. If asked about a domain not in the current data (e.g. specific med stock), advise based on standard emergency protocols while noting the data limitation."""
+Interaction Style:
+- Be professional, helpful, and conversational.
+- For simple greetings like "Hi" or "Hello", respond warmly and ask how you can assist with hospital operations today.
+- When asked complex technical questions, provide concise, expert advisor responses in 3-5 bullet points maximum.
+- Start technical responses with the most urgent action first.
+- If asked about a domain not in the current data, advise based on standard emergency protocols while noting the data limitation."""
 
 @app.post("/api/gemini/chat")
 async def gemini_chat(req: ChatRequest):
     """Proxy chat to Gemini with hospital context injected."""
     if not GEMINI_AVAILABLE or gemini_model is None:
+        lowered = req.message.lower().strip()
+        if lowered in ["hi", "hello", "hey", "hi there"]:
+            return {
+                "response": "👋 Hello! I'm MedGuard AI, currently running in **Demo Mode** because no valid API key was detected in the backend. I can provide simulated advice, but to see real analysis of your hospital data, please configure a `GEMINI_API_KEY` in `backend/.env`. How can I help you today?",
+                "model": "demo_mode"
+            }
+        
         return {
             "response": (
                 "⚠️ Gemini AI is currently in Demo Mode. To enable full AI capabilities, "
@@ -683,22 +827,52 @@ async def gemini_chat(req: ChatRequest):
     ctx = req.context or {}
     context_str = ""
     if ctx:
-        context_str = f"\n\nCurrent Hospital Resource Status:\n{ctx}"
-
-    prompt = f"{SYSTEM_CONTEXT}{context_str}\n\nAdministrator question: {req.message}"
+        context_str = f"Current Hospital Resource Status for Context:\n{json.dumps(ctx, indent=2)}"
 
     try:
         if gemini_model is None:
              raise ValueError("Gemini model not initialized")
-        response = gemini_model.generate_content(prompt)
+        
+        # Format conversation history
+        contents = []
+        if req.history:
+            for entry in req.history:
+                # Gemini expects "user" and "model" roles
+                role = "user" if entry["role"] == "user" else "model"
+                contents.append({"role": role, "parts": [entry["content"]]})
+        
+        # Inject system context into the latest message
+        full_prompt = f"{SYSTEM_CONTEXT}\n\n{context_str}\n\nUser Message: {req.message}"
+        contents.append({"role": "user", "parts": [full_prompt]})
+        
+        # We use generate_content with the full history array instead of start_chat
+        # to bypass createChatSession API mismatches
+        response = gemini_model.generate_content(contents)
+        
         # Accessing model name safely
-        m_name = getattr(gemini_model, "model_name", "gemini-1.5-flash")
+        m_name = getattr(gemini_model, "model_name", "gemini-2.5-flash")
         if isinstance(m_name, str) and m_name.startswith("models/"):
             m_name = m_name.replace("models/", "", 1)
+            
         return {"response": response.text, "model": m_name}
     except Exception as e:
-        print(f"DEBUG: Gemini API error: {str(e)}")
-        raise HTTPException(status_code=500, detail=f"Gemini error: {str(e)}")
+        error_msg = str(e)
+        print(f"DEBUG: Gemini API error: {error_msg}")
+        
+        # If it's an API key or quota issue, we can inform the user specifically
+        if "API_KEY_INVALID" in error_msg or "403" in error_msg:
+            return {
+                "response": "⚠️ **API Key Error**: The configured Gemini API key appears to be invalid or lacks permission. Please verify your `GEMINI_API_KEY` in `backend/.env`.",
+                "model": "auth_error"
+            }
+        
+        if "429" in error_msg or "quota" in error_msg.lower():
+            return {
+                "response": "⚠️ **Quota Exceeded**: Your Gemini API key has reached its current limit or quota. Please check your Google AI Studio dashboard or try again later.\n\nReturning to Demo Mode for now...",
+                "model": "quota_error"
+            }
+        
+        raise HTTPException(status_code=500, detail=f"Gemini API Error: {error_msg}")
 
 
 class StaffCreate(BaseModel):
@@ -774,6 +948,123 @@ class HospitalHistoryRecord(BaseModel):
     avg_ventilator_util: float
     avg_daily_admissions: float
     shortage_days: int
+
+# ─── Appointment Booking ───────────────────────────────────────────────────
+
+class AppointmentExtractRequest(BaseModel):
+    message: str
+
+class AppointmentExtractResponse(BaseModel):
+    specialization: Optional[str] = None
+    date: Optional[str] = None # YYYY-MM-DD
+    time: Optional[str] = None # HH:MM
+    missing_fields: List[str] = []
+
+class AppointmentCreate(BaseModel):
+    hospital_id: int
+    hospital_name: str
+    specialization: str
+    date: str
+    time: str
+    raw_message: str
+
+class AppointmentResponse(BaseModel):
+    id: int
+    user_id: int
+    hospital_id: int
+    hospital_name: str
+    specialization: str
+    date: str
+    time: str
+    status: str
+    created_at: str
+
+    class Config:
+        from_attributes = True
+
+@app.post("/api/appointments/extract", response_model=AppointmentExtractResponse)
+async def extract_appointment_info(req: AppointmentExtractRequest):
+    """Use Gemini to extract structured appointment info from natural language."""
+    if not GEMINI_AVAILABLE or gemini_model is None:
+        # Fallback for demo mode
+        msg = req.message.lower()
+        res = AppointmentExtractResponse()
+        
+        # Simple keyword matching for demo
+        if "cardio" in msg: res.specialization = "Cardiology"
+        elif "derm" in msg: res.specialization = "Dermatology"
+        elif "ortho" in msg: res.specialization = "Orthopedics"
+        
+        # Mock date/time extraction for demo
+        if "tomorrow" in msg:
+            tomorrow = datetime.date.today() + datetime.timedelta(days=1)
+            res.date = tomorrow.isoformat()
+        
+        if not res.specialization: res.missing_fields.append("specialization")
+        if not res.date: res.missing_fields.append("date")
+        if not res.time: res.missing_fields.append("time")
+        
+        return res
+
+    # Gemini prompt for structured extraction
+    current_date = datetime.date.today().isoformat()
+    prompt = f"""You are an intelligent hospital appointment booking assistant.
+Your job is ONLY to extract structured booking information from user messages.
+Current date (YYYY-MM-DD): {current_date}
+
+Follow this structured workflow strictly:
+1. Identify medical specialization (e.g. "cardiologist" -> "Cardiology").
+2. Identify appointment date. If "tomorrow", calculate relative to {current_date}.
+3. Identify appointment time. Convert to 24-hour format (HH:MM).
+
+Return ONLY JSON in this exact format:
+{{
+  "specialization": "... or null",
+  "date": "YYYY-MM-DD or null",
+  "time": "HH:MM or null",
+  "missing_fields": []
+}}
+If any fields are missing, list them in "missing_fields".
+User Message: "{req.message}"
+"""
+    try:
+        response = gemini_model.generate_content(prompt)
+        # Parse JSON from response.text
+        text = response.text.strip()
+        # Clean up in case Gemini wraps in ```json ... ```
+        if text.startswith("```json"):
+            text = text.replace("```json", "", 1).replace("```", "", 1).strip()
+        elif text.startswith("```"):
+            text = text.replace("```", "", 2).strip()
+        
+        data = json.loads(text)
+        return data
+    except Exception as e:
+        print(f"Extraction Error: {e}")
+        raise HTTPException(status_code=500, detail="Failed to extract appointment info")
+
+@app.post("/api/appointments", response_model=AppointmentResponse)
+def create_appointment(data: AppointmentCreate, db: Session = Depends(get_db), current_user: models.User = Depends(auth.get_current_user)):
+    """Book a new appointment."""
+    new_app = models.Appointment(
+        user_id=current_user.id,
+        hospital_id=data.hospital_id,
+        hospital_name=data.hospital_name,
+        specialization=data.specialization,
+        date=data.date,
+        time=data.time,
+        raw_message=data.raw_message,
+        created_at=datetime.datetime.utcnow().isoformat() + "Z"
+    )
+    db.add(new_app)
+    db.commit()
+    db.refresh(new_app)
+    return new_app
+
+@app.get("/api/appointments", response_model=List[AppointmentResponse])
+def get_user_appointments(db: Session = Depends(get_db), current_user: models.User = Depends(auth.get_current_user)):
+    """List all appointments for the current user."""
+    return db.query(models.Appointment).filter(models.Appointment.user_id == current_user.id).all()
 
 @app.post("/api/hospital-history/seed")
 def seed_hospital_history(records: List[HospitalHistoryRecord], db: Session = Depends(get_db)):

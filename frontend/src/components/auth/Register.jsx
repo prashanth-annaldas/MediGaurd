@@ -56,7 +56,7 @@ export default function Register() {
                     email,
                     password,
                     role: role,
-                    hospital_name: role === 'ADMIN' ? hospitalName : undefined
+                    hospital_name: (role === 'ADMIN' || role === 'STAFF') ? hospitalName : undefined
                 })
             });
 
@@ -191,8 +191,8 @@ export default function Register() {
                         </div>
                     </div>
 
-                    {/* Hospital name picker — only for ADMIN */}
-                    {role === 'ADMIN' && (
+                    {/* Hospital name picker — for ADMIN and STAFF */}
+                    {(role === 'ADMIN' || role === 'STAFF') && (
                         <div className="space-y-1">
                             <label className="text-xs font-medium text-[var(--text-muted)] ml-1">
                                 Hospital Name <span className="text-red-400">*</span>
@@ -241,7 +241,7 @@ export default function Register() {
 
                     <button
                         type="submit"
-                        disabled={loading || !email || !password || !confirmPassword || !firstName || !lastName || (role === 'ADMIN' && !hospitalName)}
+                        disabled={loading || !email || !password || !confirmPassword || !firstName || !lastName || ((role === 'ADMIN' || role === 'STAFF') && !hospitalName)}
                         className="w-full mt-2 bg-teal-500 hover:bg-teal-400 text-navy-950 font-semibold py-2.5 rounded-xl transition-all shadow-[0_0_20px_rgba(20,184,166,0.2)] hover:shadow-[0_0_25px_rgba(20,184,166,0.4)] disabled:opacity-50 flex items-center justify-center gap-2"
                     >
                         {loading && <Loader2 className="w-4 h-4 animate-spin" />}

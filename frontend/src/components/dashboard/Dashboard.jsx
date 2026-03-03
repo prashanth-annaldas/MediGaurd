@@ -42,9 +42,9 @@ export default function Dashboard() {
     const navigate = useNavigate()
 
     useEffect(() => {
-        const hospitalId = selectedHospital ? selectedHospital.id : null;
-        refreshData(hospitalId)
-        fetchTrends(hospitalId)
+        // useStore manages hospital inference based on role vs mapping
+        refreshData()
+        fetchTrends()
     }, [selectedHospital])
 
     const displayChartData = trends && trends.length > 0 ? trends : chartData
@@ -52,7 +52,9 @@ export default function Dashboard() {
 
     // Determine title
     let title = "Dashboard"
-    if (user?.role !== 'ADMIN' && user?.role !== 'STAFF' && selectedHospital) {
+    if (user?.role === 'ADMIN' || user?.role === 'STAFF') {
+        title = `${user.hospital_name || 'Hospital'} Dashboard`
+    } else if (selectedHospital) {
         title = `${selectedHospital.name} Analysis`
     }
 

@@ -65,3 +65,23 @@ class Hospital(Base):
     ventilators_total = Column(Integer)
     ventilators_available = Column(Integer)
     specialties = Column(String) # Comma-separated string
+    doctors = Column(String) # JSON serialized list of doctor dicts
+    rating_count = Column(Integer)
+    fee_min = Column(Integer)
+    fee_max = Column(Integer)
+    total_doctors = Column(Integer)
+    open_24x7 = Column(Integer) # 0 or 1
+
+class Appointment(Base):
+    __tablename__ = "appointments"
+
+    id = Column(Integer, primary_key=True, index=True)
+    user_id = Column(Integer, index=True)
+    hospital_id = Column(Integer, index=True)
+    hospital_name = Column(String)
+    specialization = Column(String)
+    date = Column(String) # YYYY-MM-DD
+    time = Column(String) # HH:MM (24-hour format)
+    status = Column(String, default="pending")
+    raw_message = Column(String)
+    created_at = Column(String)

@@ -93,7 +93,7 @@ export default function HospitalDashboard() {
         : 0;
 
     return (
-        <Layout title="Hospital Dashboard">
+        <Layout title={`${hospitalName || 'Hospital'} Dashboard`}>
             <div className="p-6 space-y-6" style={{ color: 'var(--text-primary)' }}>
                 {/* Header */}
                 <div className="flex items-center gap-3">

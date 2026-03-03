@@ -1,0 +1,11 @@
+c:\Users\annal\Downloads\200_hospitals_last_1_year_dataset.csv
+c:\Users\annal\Downloads\200_hospitals_last_1_year_dataset_updated_with_famous.csv
+c:\Users\annal\Downloads\200_hospitals_last_1_year_with_famous_hospitals.csv
+c:\Users\annal\Downloads\200_hospitals_last_5_years_dataset.csv
+c:\Users\annal\Downloads\Bike trip data.csv
+c:\Users\annal\Downloads\current_stock_prices.csv
+c:\Users\annal\Downloads\hospital_resource_shortage_dataset_1000_rows_cleaned.csv
+c:\Users\annal\Downloads\sample_hospitals_200_records.csv
+c:\Users\annal\Downloads\200_hospitals_5_years_with_doctors_expanded\200_hospitals_5_years_with_doctors_expanded.csv
+c:\Users\annal\Downloads\sqldeveloper-24.3.1.347.1826-x64\sqldeveloper\sqldeveloper\extensions\oracle.datamodeler\templates\ABBREVS_SAMPLE.csv
+c:\Users\annal\Downloads\sqldeveloper-24.3.1.347.1826-x64\sqldeveloper\sqldeveloper\extensions\oracle.datamodeler\templates\plurals.csv

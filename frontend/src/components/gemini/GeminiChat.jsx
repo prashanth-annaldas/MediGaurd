@@ -86,7 +86,12 @@ export default function GeminiChat() {
         setLoading(true)
 
         try {
-            const response = await askGemini(text, buildContext())
+            // Filter history to remove loading messages and format for backend
+            const history = messages
+                .filter(m => !m.loading && m.content)
+                .map(m => ({ role: m.role, content: m.content }));
+
+            const response = await askGemini(text, buildContext(), history)
             setMessages(prev => prev.map(m => m.id === loadingMsg.id ? { ...m, loading: false, content: response } : m))
         } catch (err) {
             setMessages(prev => prev.map(m => m.id === loadingMsg.id ? {
@@ -133,9 +138,9 @@ export default function GeminiChat() {
                             onClick={() => sendMessage(p)}
                             className="text-xs px-3 py-1.5 rounded-full transition-all duration-200"
                             style={{
-                                background: 'rgba(45,212,191,0.06)',
-                                border: '1px solid rgba(45,212,191,0.15)',
-                                color: '#2dd4bf',
+                                background: 'var(--teal-glow)',
+                                border: '1px solid var(--border-color)',
+                                color: 'var(--teal-strong)',
                                 cursor: 'pointer',
                             }}
                         >
@@ -161,13 +166,13 @@ export default function GeminiChat() {
                             rows={2}
                             className="w-full rounded-xl px-4 py-3 text-sm resize-none outline-none transition-all duration-200"
                             style={{
-                                background: 'rgba(10,22,40,0.9)',
-                                border: '1px solid rgba(45,212,191,0.15)',
+                                background: 'var(--bg-secondary)',
+                                border: '1px solid var(--border-color)',
                                 color: 'var(--text-primary)',
                                 fontFamily: 'Inter, sans-serif',
                             }}
-                            onFocus={e => e.target.style.borderColor = 'rgba(45,212,191,0.4)'}
-                            onBlur={e => e.target.style.borderColor = 'rgba(45,212,191,0.15)'}
+                            onFocus={e => e.target.style.borderColor = 'var(--border-hover)'}
+                            onBlur={e => e.target.style.borderColor = 'var(--border-color)'}
                         />
                     </div>
                     <button
@@ -194,9 +199,9 @@ export default function GeminiChat() {
                             onClick={() => sendMessage(p)}
                             className="text-xs px-3 py-1.5 rounded-full transition-all duration-200"
                             style={{
-                                background: 'rgba(255,255,255,0.04)',
-                                border: '1px solid rgba(255,255,255,0.06)',
-                                color: 'var(--text-muted)',
+                                background: 'var(--bg-card)',
+                                border: '1px solid var(--border-color)',
+                                color: 'var(--text-secondary)',
                                 cursor: 'pointer',
                             }}
                         >

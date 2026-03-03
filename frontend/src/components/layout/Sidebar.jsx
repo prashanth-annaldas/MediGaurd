@@ -3,7 +3,7 @@ import { NavLink, useLocation, useNavigate } from 'react-router-dom'
 import {
     LayoutDashboard, Activity, Bell, TrendingUp,
     Brain, Settings, ChevronLeft, ChevronRight,
-    Shield, Zap, Users, MapPin
+    Shield, Zap, Users, MapPin, UserPlus, UserMinus, QrCode
 } from 'lucide-react'
 import useStore from '../../store/useStore'
 import { useClock } from '../../hooks/useClock'
@@ -17,8 +17,10 @@ const navItems = [
     { to: '/trends', icon: TrendingUp, label: 'Trends', requiresSelectedHospital: true },
     { to: '/gemini', icon: Brain, label: 'Gemini AI', alwaysShowForUser: true },
     { to: '/hospitals', icon: MapPin, label: 'Hospital Search', userOnly: true, alwaysShowForUser: true },
-    { to: '/staff', icon: Users, label: 'Staff Data', adminOnly: true },
     { to: '/admin', icon: Shield, label: 'Admin', adminOnly: true },
+    { to: '/admit', icon: UserPlus, label: 'Admit Patient', staffOnly: true },
+    { to: '/discharge', icon: UserMinus, label: 'Discharge Patient', staffOnly: true },
+    { to: '/qr-gen', icon: QrCode, label: 'QR Generator', staffOnly: true },
 ]
 
 export default function Sidebar() {
@@ -73,18 +75,16 @@ export default function Sidebar() {
                 {navItems.map(({ to, icon: Icon, label, end, adminOnly, userOnly, requiresSelectedHospital, alwaysShowForUser }) => {
                     if (adminOnly && user?.role !== 'ADMIN') return null;
                     if (userOnly && (user?.role === 'ADMIN' || user?.role === 'STAFF')) return null;
+                    if (requiresSelectedHospital && !selectedHospital && user?.role !== 'ADMIN' && user?.role !== 'STAFF') return null;
+
+                    // Staff features (Admit/Discharge/QR Gen) should be visible to Staff and Admins
+                    const isStaffFeature = label === 'Admit Patient' || label === 'Discharge Patient' || label === 'QR Generator';
+                    if (isStaffFeature && user?.role !== 'STAFF' && user?.role !== 'ADMIN') return null;
 
                     // For normal users (not ADMIN, not STAFF)
                     if (user?.role !== 'ADMIN' && user?.role !== 'STAFF') {
-                        if (!selectedHospital) {
-                            // First site: Only show items that are always visible to user (e.g. Hospital Search, Gemini AI)
-                            if (requiresSelectedHospital) return null;
-                        } else {
-                            // Second site: Hide "alwaysShowForUser" (like Hospital Search) if we prefer them gone?
-                            // Wait, the prompt says "second site that is like side bar has Dashboard, Resources, Alert Center, AI Forecast, Trends, Gemini AI"
-                            // So Hospital Search shouldn't be there.
-                            if (label === 'Hospital Search') return null;
-                        }
+                        // Show if alwaysShowForUser OR if it requiresSelectedHospital and we have a selectedHospital
+                        if (!alwaysShowForUser && !(requiresSelectedHospital && selectedHospital)) return null;
                     }
 
                     return (

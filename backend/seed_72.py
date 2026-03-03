@@ -1,7 +1,3 @@
-"""
-Seed 5-year hospital history from CSV.
-Aggregates daily rows into monthly averages and writes directly to SQLite to avoid timeouts.
-"""
 import csv
 import os
 from collections import defaultdict
@@ -9,15 +5,15 @@ from database import SessionLocal
 from models import HospitalHistory
 
 CSV_PATH = r"c:\Users\annal\Downloads\200_hospitals_5_years_with_doctors_expanded\200_hospitals_5_years_with_doctors_expanded.csv"
+HOSPITAL_NAME = "Global Health Institute 72"
 
 def run():
     if not os.path.exists(CSV_PATH):
         print(f"ERROR: CSV file not found at {CSV_PATH}")
         return
 
-    print(f"Reading CSV: {CSV_PATH} ...")
+    print(f"Reading CSV for {HOSPITAL_NAME}...")
     
-    # monthly_data[(hospital, city, year, month)] = {sums, counts}
     monthly = defaultdict(lambda: {
         "bed_occ_sum": 0.0, "icu_occ_sum": 0.0,
         "vent_sum": 0.0, "admissions_sum": 0.0,
@@ -28,6 +24,9 @@ def run():
     with open(CSV_PATH, newline="", encoding="utf-8") as f:
         reader = csv.DictReader(f)
         for row in reader:
+            if row["Hospital_Name"].strip() != HOSPITAL_NAME:
+                continue
+                
             hospital = row["Hospital_Name"].strip()
             city     = row["City"].strip()
             date     = row["Date"].strip()  # YYYY-MM-DD
@@ -99,17 +98,13 @@ def run():
                 ))
             
             total_seeded += 1
-            if (i + 1) % 500 == 0:
-                db.commit()
-                print(f"  Progress: {i+1}/{len(records)} seeded...")
         
         db.commit()
         print(f"\nDone — {total_seeded} total records processed in DB.")
     except Exception as e:
         db.rollback()
-        print(f"ERROR during seeding: {e}")
+        print(f"ERROR: {e}")
     finally:
         db.close()
 
-if __name__ == "__main__":
-    run()
+if __name__ == "__main__": run()

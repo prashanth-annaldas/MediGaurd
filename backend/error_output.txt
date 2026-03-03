@@ -1,0 +1,2 @@
+Status: 200
+Body: {"response":"Hello there! I'm MedGuard AI, ready to assist you with hospital resource management. How can I help you optimize operations and prevent shortages today?","model":"gemini-2.5-flash"}

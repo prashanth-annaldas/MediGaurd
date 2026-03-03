@@ -73,7 +73,17 @@ const useStore = create((set, get) => ({
 
     fetchTrends: async (hospitalId = null) => {
         try {
-            const url = hospitalId ? `/api/trends?hospital_id=${hospitalId}` : '/api/trends';
+            const hospitalName = get().user?.role === 'ADMIN' || get().user?.role === 'STAFF'
+                ? get().user?.hospital_name
+                : get().selectedHospital?.name;
+
+            let url = '/api/trends';
+            if (hospitalId) {
+                url = `/api/trends?hospital_id=${hospitalId}`;
+            } else if (hospitalName) {
+                url = `/api/trends?hospital_name=${encodeURIComponent(hospitalName)}`;
+            }
+
             const res = await fetch(url)
             if (res.ok) {
                 const data = await res.json()

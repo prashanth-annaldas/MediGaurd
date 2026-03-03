@@ -13,6 +13,9 @@ import Login from './components/auth/Login'
 import Register from './components/auth/Register'
 import StressIndexView from './components/public/StressIndexView'
 import HospitalSearch from './components/public/HospitalSearch'
+import AdmitPatient from './components/staff/AdmitPatient'
+import DischargePatient from './components/staff/DischargePatient'
+import QRGenerator from './components/staff/QRGenerator'
 import useStore from './store/useStore'
 
 const ProtectedRoute = ({ children, allowedRoles }) => {
@@ -48,8 +51,9 @@ const RootRedirect = () => {
 
 // Role-aware dashboard router
 const SmartDashboard = () => {
-    const user = useStore(state => state.user);
-    return user?.role === 'ADMIN' ? <HospitalDashboard /> : <Dashboard />;
+    // Both ADMIN/STAFF and USER should see the comprehensive real-time Dashboard 
+    // instead of the history-only HospitalDashboard.
+    return <Dashboard />;
 };
 
 export default function App() {
@@ -75,6 +79,11 @@ export default function App() {
             <Route path="/trends" element={<HospitalRequiredRoute><TrendAnalytics /></HospitalRequiredRoute>} />
             <Route path="/gemini" element={<ProtectedRoute><GeminiChat /></ProtectedRoute>} />
             <Route path="/hospitals" element={<ProtectedRoute><HospitalSearch /></ProtectedRoute>} />
+
+            {/* Staff/Admin QR Features */}
+            <Route path="/admit" element={<ProtectedRoute allowedRoles={['ADMIN', 'STAFF']}><AdmitPatient /></ProtectedRoute>} />
+            <Route path="/discharge" element={<ProtectedRoute allowedRoles={['ADMIN', 'STAFF']}><DischargePatient /></ProtectedRoute>} />
+            <Route path="/qr-gen" element={<ProtectedRoute allowedRoles={['ADMIN', 'STAFF']}><QRGenerator /></ProtectedRoute>} />
         </Routes>
     )
 }
