@@ -111,6 +111,13 @@ app.add_middleware(
     allow_headers=["*"],
 )
 
+@app.middleware("http")
+async def log_requests(request, call_next):
+    print(f"DEBUG: Request: {request.method} {request.url.path}")
+    response = await call_next(request)
+    print(f"DEBUG: Response status: {response.status_code}")
+    return response
+
 # ─── Gemini Setup ────────────────────────────────────────────────────────────
 try:
     import google.generativeai as genai
