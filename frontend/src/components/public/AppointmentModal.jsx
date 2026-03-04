@@ -56,6 +56,7 @@ export default function AppointmentModal({ hospital, onClose }) {
                     hospital_id: hospital.id,
                     hospital_name: hospital.name,
                     specialization: extractedData.specialization,
+                    doctor_name: extractedData.doctor_name,
                     date: extractedData.date,
                     time: extractedData.time,
                     raw_message: message

@@ -17,7 +17,7 @@ export default function Appointments() {
     const fetchAppointments = async () => {
         setLoading(true);
         try {
-            const res = await fetch(`${import.meta.env.VITE_API_URL || 'http://localhost:8000'}/api/appointments`, {
+            const res = await fetch(`${import.meta.env.VITE_API_URL || 'https://medigaurd1-fzd9.onrender.com'}/api/appointments`, {
                 headers: { 'Authorization': `Bearer ${token}` }
             });
             if (!res.ok) throw new Error('Failed to fetch appointments');
@@ -138,8 +138,8 @@ export default function Appointments() {
                                                     </td>
                                                     <td className="px-6 py-4 whitespace-nowrap">
                                                         <span className={`px-2.5 py-1 inline-flex text-xs leading-5 font-semibold rounded-full ${appt.status === 'confirmed' ? 'bg-green-100 text-green-800' :
-                                                                appt.status === 'pending' ? 'bg-amber-100 text-amber-800' :
-                                                                    'bg-gray-100 text-gray-800'
+                                                            appt.status === 'pending' ? 'bg-amber-100 text-amber-800' :
+                                                                'bg-gray-100 text-gray-800'
                                                             }`}>
                                                             {appt.status.charAt(0).toUpperCase() + appt.status.slice(1)}
                                                         </span>
