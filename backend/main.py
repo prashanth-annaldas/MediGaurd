@@ -36,6 +36,7 @@ app.include_router(auth.router)
 
 # Seed demo users on startup
 from sqlalchemy.orm import Session
+from sqlalchemy import func
 def seed_users():
     db = next(get_db())
     if not db.query(models.User).first():
@@ -1130,7 +1131,11 @@ def get_appointments(db: Session = Depends(get_db), current_user: models.User = 
     """
     if current_user.role in ["STAFF", "ADMIN"]:
         if current_user.hospital_name:
-            return db.query(models.Appointment).filter(models.Appointment.hospital_name == current_user.hospital_name).all()
+            # Flexible matching for hospital names
+            h_name = current_user.hospital_name.strip()
+            return db.query(models.Appointment).filter(
+                func.lower(func.trim(models.Appointment.hospital_name)) == func.lower(func.trim(h_name))
+            ).all()
         else:
             return [] # Staff with no hospital assigned
     else:
