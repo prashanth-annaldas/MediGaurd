@@ -57,7 +57,7 @@ const useStore = create((set, get) => ({
     fetchPrediction: async (currentStats) => {
         try {
             // currentStats should shape to Match PredictRequest
-            const res = await fetch(`${import.meta.env.VITE_API_URL || 'https://medigaurd1-fzd9.onrender.com'}/api/predict_shortage`, {
+            const res = await fetch(`/api/predict_shortage`, {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
                 body: JSON.stringify(currentStats)
@@ -238,7 +238,7 @@ const useStore = create((set, get) => ({
 
         // Persist to DB
         try {
-            await fetch(`${import.meta.env.VITE_API_URL || 'https://medigaurd1-fzd9.onrender.com'}/api/alerts`, {
+            await fetch(`/api/alerts`, {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
                 body: JSON.stringify(newAlert)
@@ -254,7 +254,7 @@ const useStore = create((set, get) => ({
         }));
 
         try {
-            await fetch(`${import.meta.env.VITE_API_URL || 'https://medigaurd1-fzd9.onrender.com'}/api/alerts/${id}`, { method: 'DELETE' });
+            await fetch(`/api/alerts/${id}`, { method: 'DELETE' });
         } catch (e) {
             console.error("Failed to delete alert", e);
         }
@@ -268,7 +268,7 @@ const useStore = create((set, get) => ({
                 ? get().user?.hospital_name
                 : get().selectedHospital?.name;
 
-            const url = hospitalName ? `${import.meta.env.VITE_API_URL || 'https://medigaurd1-fzd9.onrender.com'}/api/alerts?hospital_name=${encodeURIComponent(hospitalName)}` : `${import.meta.env.VITE_API_URL || 'https://medigaurd1-fzd9.onrender.com'}/api/alerts`;
+            const url = hospitalName ? `/api/alerts?hospital_name=${encodeURIComponent(hospitalName)}` : `/api/alerts`;
             await fetch(url, { method: 'DELETE' });
         } catch (e) {
             console.error("Failed to clear alerts", e);

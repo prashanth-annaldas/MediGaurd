@@ -17,7 +17,7 @@ export default function Appointments() {
     const fetchAppointments = async () => {
         setLoading(true);
         try {
-            const res = await fetch(`${import.meta.env.VITE_API_URL || 'https://medigaurd1-fzd9.onrender.com'}/api/appointments`, {
+            const res = await fetch(`/api/appointments`, {
                 headers: { 'Authorization': `Bearer ${token}` }
             });
             if (!res.ok) throw new Error('Failed to fetch appointments');

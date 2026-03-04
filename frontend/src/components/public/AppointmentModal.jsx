@@ -26,7 +26,7 @@ export default function AppointmentModal({ hospital, onClose }) {
         setIsExtracting(true);
         setError(null);
         try {
-            const res = await fetch(`${import.meta.env.VITE_API_URL || 'https://medigaurd1-fzd9.onrender.com'}/api/appointments/extract`, {
+            const res = await fetch(`/api/appointments/extract`, {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
                 body: JSON.stringify({ message })
@@ -46,7 +46,7 @@ export default function AppointmentModal({ hospital, onClose }) {
         setBooking(true);
         setError(null);
         try {
-            const res = await fetch(`${import.meta.env.VITE_API_URL || 'https://medigaurd1-fzd9.onrender.com'}/api/appointments`, {
+            const res = await fetch(`/api/appointments`, {
                 method: 'POST',
                 headers: {
                     'Content-Type': 'application/json',

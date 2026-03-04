@@ -1154,9 +1154,12 @@ def get_appointments(db: Session = Depends(get_db), current_user: models.User = 
         if current_user.hospital_name:
             # Flexible matching for hospital names
             h_name = current_user.hospital_name.strip()
-            return db.query(models.Appointment).filter(
+            print(f"DEBUG: Fetching appointments for hospital: '{h_name}'")
+            appts = db.query(models.Appointment).filter(
                 func.lower(func.trim(models.Appointment.hospital_name)) == func.lower(func.trim(h_name))
             ).all()
+            print(f"DEBUG: Found {len(appts)} appointments")
+            return appts
         else:
             return [] # Staff with no hospital assigned
     else:
