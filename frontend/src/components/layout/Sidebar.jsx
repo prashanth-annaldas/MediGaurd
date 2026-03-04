@@ -73,17 +73,16 @@ export default function Sidebar() {
 
             {/* Nav */}
             <nav className="flex-1 px-2 space-y-1 overflow-y-auto overflow-x-hidden py-2">
-                {navItems.map(({ to, icon: Icon, label, end, adminOnly, userOnly, requiresSelectedHospital, alwaysShowForUser }) => {
+                {navItems.map(({ to, icon: Icon, label, end, adminOnly, userOnly, staffOnly, requiresSelectedHospital, alwaysShowForUser }) => {
                     if (adminOnly && user?.role !== 'ADMIN') return null;
                     if (userOnly && (user?.role === 'ADMIN' || user?.role === 'STAFF')) return null;
                     if (requiresSelectedHospital && !selectedHospital && user?.role !== 'ADMIN' && user?.role !== 'STAFF') return null;
 
                     // Staff features (Admit/Discharge/QR Gen/Appointments) should be visible to Staff and Admins
-                    const isStaffFeature = label === 'Admit Patient' || label === 'Discharge Patient' || label === 'QR Generator' || label === 'Appointments';
-                    if (isStaffFeature && user?.role !== 'STAFF' && user?.role !== 'ADMIN') return null;
-
-                    // For normal users (not ADMIN, not STAFF)
-                    if (user?.role !== 'ADMIN' && user?.role !== 'STAFF') {
+                    if (staffOnly) {
+                        if (user?.role !== 'STAFF' && user?.role !== 'ADMIN') return null;
+                    } else if (user?.role !== 'ADMIN' && user?.role !== 'STAFF') {
+                        // For normal users (not ADMIN, not STAFF)
                         // Show if alwaysShowForUser OR if it requiresSelectedHospital and we have a selectedHospital
                         if (!alwaysShowForUser && !(requiresSelectedHospital && selectedHospital)) return null;
                     }
