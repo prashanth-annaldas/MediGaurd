@@ -1,4 +1,4 @@
-from sqlalchemy import Column, Integer, String, Float
+from sqlalchemy import Column, Integer, String, Float, ForeignKey
 from database import Base
 
 class User(Base):
@@ -76,12 +76,15 @@ class Appointment(Base):
     __tablename__ = "appointments"
 
     id = Column(Integer, primary_key=True, index=True)
-    user_id = Column(Integer, index=True)
-    hospital_id = Column(Integer, index=True)
+    user_id = Column(Integer, index=True, nullable=True)
+    hospital_id = Column(Integer, ForeignKey("hospitals.id"), index=True, nullable=True)
     hospital_name = Column(String)
     specialization = Column(String)
+    doctor_name = Column(String, nullable=True)
     date = Column(String) # YYYY-MM-DD
     time = Column(String) # HH:MM (24-hour format)
     status = Column(String, default="pending")
     raw_message = Column(String)
+    patient_name = Column(String, nullable=True)
+    patient_phone = Column(String, nullable=True)
     created_at = Column(String)

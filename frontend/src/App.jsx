@@ -16,6 +16,7 @@ import HospitalSearch from './components/public/HospitalSearch'
 import AdmitPatient from './components/staff/AdmitPatient'
 import DischargePatient from './components/staff/DischargePatient'
 import QRGenerator from './components/staff/QRGenerator'
+import Appointments from './components/staff/Appointments'
 import useStore from './store/useStore'
 
 const ProtectedRoute = ({ children, allowedRoles }) => {
@@ -84,6 +85,7 @@ export default function App() {
             <Route path="/admit" element={<ProtectedRoute allowedRoles={['ADMIN', 'STAFF']}><AdmitPatient /></ProtectedRoute>} />
             <Route path="/discharge" element={<ProtectedRoute allowedRoles={['ADMIN', 'STAFF']}><DischargePatient /></ProtectedRoute>} />
             <Route path="/qr-gen" element={<ProtectedRoute allowedRoles={['ADMIN', 'STAFF']}><QRGenerator /></ProtectedRoute>} />
+            <Route path="/appointments" element={<ProtectedRoute allowedRoles={['ADMIN', 'STAFF']}><Appointments /></ProtectedRoute>} />
         </Routes>
     )
 }

@@ -3,7 +3,7 @@ import { NavLink, useLocation, useNavigate } from 'react-router-dom'
 import {
     LayoutDashboard, Activity, Bell, TrendingUp,
     Brain, Settings, ChevronLeft, ChevronRight,
-    Shield, Zap, Users, MapPin, UserPlus, UserMinus, QrCode
+    Shield, Zap, Users, MapPin, UserPlus, UserMinus, QrCode, CalendarDays
 } from 'lucide-react'
 import useStore from '../../store/useStore'
 import { useClock } from '../../hooks/useClock'
@@ -18,6 +18,7 @@ const navItems = [
     { to: '/gemini', icon: Brain, label: 'Gemini AI', alwaysShowForUser: true },
     { to: '/hospitals', icon: MapPin, label: 'Hospital Search', userOnly: true, alwaysShowForUser: true },
     { to: '/admin', icon: Shield, label: 'Admin', adminOnly: true },
+    { to: '/appointments', icon: CalendarDays, label: 'Appointments', staffOnly: true },
     { to: '/admit', icon: UserPlus, label: 'Admit Patient', staffOnly: true },
     { to: '/discharge', icon: UserMinus, label: 'Discharge Patient', staffOnly: true },
     { to: '/qr-gen', icon: QrCode, label: 'QR Generator', staffOnly: true },
@@ -77,8 +78,8 @@ export default function Sidebar() {
                     if (userOnly && (user?.role === 'ADMIN' || user?.role === 'STAFF')) return null;
                     if (requiresSelectedHospital && !selectedHospital && user?.role !== 'ADMIN' && user?.role !== 'STAFF') return null;
 
-                    // Staff features (Admit/Discharge/QR Gen) should be visible to Staff and Admins
-                    const isStaffFeature = label === 'Admit Patient' || label === 'Discharge Patient' || label === 'QR Generator';
+                    // Staff features (Admit/Discharge/QR Gen/Appointments) should be visible to Staff and Admins
+                    const isStaffFeature = label === 'Admit Patient' || label === 'Discharge Patient' || label === 'QR Generator' || label === 'Appointments';
                     if (isStaffFeature && user?.role !== 'STAFF' && user?.role !== 'ADMIN') return null;
 
                     // For normal users (not ADMIN, not STAFF)

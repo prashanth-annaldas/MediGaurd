@@ -998,23 +998,37 @@ class AppointmentExtractResponse(BaseModel):
     time: Optional[str] = None # HH:MM
     missing_fields: List[str] = []
 
+class AppointmentExtractRequest(BaseModel):
+    message: str
+
+class AppointmentExtractResponse(BaseModel):
+    specialization: Optional[str] = None
+    doctor_name: Optional[str] = None
+    date: Optional[str] = None
+    time: Optional[str] = None
+    missing_fields: List[str] = []
+
 class AppointmentCreate(BaseModel):
     hospital_id: int
     hospital_name: str
     specialization: str
+    doctor_name: Optional[str] = None
     date: str
     time: str
     raw_message: str
 
 class AppointmentResponse(BaseModel):
     id: int
-    user_id: int
-    hospital_id: int
+    user_id: Optional[int]
+    hospital_id: Optional[int]
     hospital_name: str
     specialization: str
+    doctor_name: Optional[str]
     date: str
     time: str
     status: str
+    patient_name: Optional[str]
+    patient_phone: Optional[str]
     created_at: str
 
     class Config:
@@ -1032,6 +1046,10 @@ async def extract_appointment_info(req: AppointmentExtractRequest):
         if "cardio" in msg: res.specialization = "Cardiology"
         elif "derm" in msg: res.specialization = "Dermatology"
         elif "ortho" in msg: res.specialization = "Orthopedics"
+        
+        if "dr. " in msg:
+            # Very basic extraction for demo "dr. smith"
+            res.doctor_name = "dr. " + msg.split("dr. ")[1].split(" ")[0].capitalize()
         
         # Mock date/time extraction for demo
         if "tomorrow" in msg:
@@ -1052,12 +1070,14 @@ Current date (YYYY-MM-DD): {current_date}
 
 Follow this structured workflow strictly:
 1. Identify medical specialization (e.g. "cardiologist" -> "Cardiology").
-2. Identify appointment date. If "tomorrow", calculate relative to {current_date}.
-3. Identify appointment time. Convert to 24-hour format (HH:MM).
+2. Identify a specific doctor name if mentioned (e.g. "Dr. Sarah" -> "Dr. Sarah"). 
+3. Identify appointment date. If "tomorrow", calculate relative to {current_date}.
+4. Identify appointment time. Convert to 24-hour format (HH:MM).
 
 Return ONLY JSON in this exact format:
 {{
   "specialization": "... or null",
+  "doctor_name": "... or null",
   "date": "YYYY-MM-DD or null",
   "time": "HH:MM or null",
   "missing_fields": []
@@ -1089,9 +1109,12 @@ def create_appointment(data: AppointmentCreate, db: Session = Depends(get_db), c
         hospital_id=data.hospital_id,
         hospital_name=data.hospital_name,
         specialization=data.specialization,
+        doctor_name=data.doctor_name,
         date=data.date,
         time=data.time,
         raw_message=data.raw_message,
+        patient_name=current_user.name,
+        patient_phone=current_user.email,  # basic fallback if phone is unavailable
         created_at=datetime.datetime.utcnow().isoformat() + "Z"
     )
     db.add(new_app)
@@ -1100,9 +1123,18 @@ def create_appointment(data: AppointmentCreate, db: Session = Depends(get_db), c
     return new_app
 
 @app.get("/api/appointments", response_model=List[AppointmentResponse])
-def get_user_appointments(db: Session = Depends(get_db), current_user: models.User = Depends(auth.get_current_user)):
-    """List all appointments for the current user."""
-    return db.query(models.Appointment).filter(models.Appointment.user_id == current_user.id).all()
+def get_appointments(db: Session = Depends(get_db), current_user: models.User = Depends(auth.get_current_user)):
+    """List appointments. 
+    If user is STAFF/ADMIN, return all for their hospital.
+    If regular USER, return their own appointments.
+    """
+    if current_user.role in ["STAFF", "ADMIN"]:
+        if current_user.hospital_name:
+            return db.query(models.Appointment).filter(models.Appointment.hospital_name == current_user.hospital_name).all()
+        else:
+            return [] # Staff with no hospital assigned
+    else:
+        return db.query(models.Appointment).filter(models.Appointment.user_id == current_user.id).all()
 
 @app.post("/api/hospital-history/seed")
 def seed_hospital_history(records: List[HospitalHistoryRecord], db: Session = Depends(get_db)):
