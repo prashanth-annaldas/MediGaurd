@@ -1086,6 +1086,21 @@ Return ONLY JSON in this exact format:
 If any fields are missing, list them in "missing_fields".
 User Message: "{req.message}"
 """
+    if not GEMINI_AVAILABLE or gemini_model is None:
+        # Fallback for demo mode
+        msg = req.message.lower()
+        res = {
+            "specialization": "General",
+            "doctor_name": None,
+            "date": datetime.datetime.now().strftime("%Y-%m-%d"),
+            "time": "10:00",
+            "missing_fields": ["specialization", "doctor_name", "date", "time"]
+        }
+        if "cardio" in msg: res["specialization"] = "Cardiology"
+        elif "ortho" in msg: res["specialization"] = "Orthopedics"
+        elif "derm" in msg: res["specialization"] = "Dermatology"
+        return res
+
     try:
         response = gemini_model.generate_content(prompt)
         # Parse JSON from response.text
@@ -1100,7 +1115,13 @@ User Message: "{req.message}"
         return data
     except Exception as e:
         print(f"Extraction Error: {e}")
-        raise HTTPException(status_code=500, detail="Failed to extract appointment info")
+        return {
+            "specialization": "General",
+            "doctor_name": None,
+            "date": datetime.datetime.now().strftime("%Y-%m-%d"),
+            "time": "10:00",
+            "missing_fields": ["specialization", "doctor_name", "date", "time"]
+        }
 
 @app.post("/api/appointments", response_model=AppointmentResponse)
 def create_appointment(data: AppointmentCreate, db: Session = Depends(get_db), current_user: models.User = Depends(auth.get_current_user)):
@@ -1140,6 +1161,11 @@ def get_appointments(db: Session = Depends(get_db), current_user: models.User = 
             return [] # Staff with no hospital assigned
     else:
         return db.query(models.Appointment).filter(models.Appointment.user_id == current_user.id).all()
+
+@app.get("/api/admin/debug/appointments")
+def debug_list_appointments(db: Session = Depends(get_db), current_user: models.User = Depends(auth.get_current_admin_user)):
+    """ADMIN ONLY: See everything in the appointments table to debug matching."""
+    return db.query(models.Appointment).all()
 
 @app.post("/api/hospital-history/seed")
 def seed_hospital_history(records: List[HospitalHistoryRecord], db: Session = Depends(get_db)):

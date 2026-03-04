@@ -51,7 +51,7 @@ export default function Topbar({ title = 'Dashboard' }) {
                 <div>
                     <h1 className="font-semibold text-sm" style={{ color: 'var(--text-primary)' }}>{title}</h1>
                     <p className="text-xs" style={{ color: 'var(--text-muted)' }}>
-                        City General Hospital — Resource Intelligence Platform
+                        {user?.hospital_name || 'City General Hospital'} — Resource Intelligence Platform
                     </p>
                 </div>
             </div>
