@@ -59,6 +59,43 @@ def seed_users():
         db.add_all(staff)
         db.commit()
 
+    if not db.query(models.Hospital).first():
+        try:
+            import json, os
+            filepath = os.path.join(os.path.dirname(__file__), "seed_data.json")
+            if os.path.exists(filepath):
+                with open(filepath, "r", encoding="utf-8") as f:
+                    hospitals_data = json.load(f)
+                
+                new_hospitals = []
+                for h in hospitals_data:
+                    new_hospitals.append(models.Hospital(
+                        name=h.get("name"),
+                        city=h.get("city"),
+                        address=h.get("address"),
+                        latitude=h.get("latitude"),
+                        longitude=h.get("longitude"),
+                        rating=h.get("rating"),
+                        total_beds=h.get("total_beds"),
+                        available_beds=h.get("available_beds"),
+                        icu_total=h.get("icu_total"),
+                        icu_available=h.get("icu_available"),
+                        ventilators_total=h.get("ventilators_total"),
+                        ventilators_available=h.get("ventilators_available"),
+                        specialties=",".join(h.get("specialties", [])),
+                        doctors=json.dumps(h.get("doctors", [])),
+                        rating_count=h.get("rating_count", 0),
+                        fee_min=h.get("fee_min", 500),
+                        fee_max=h.get("fee_max", 800),
+                        total_doctors=h.get("total_doctors", 10),
+                        open_24x7=h.get("open_24x7", 1)
+                    ))
+                db.add_all(new_hospitals)
+                db.commit()
+                print(f"Auto-seeded {len(new_hospitals)} hospitals.")
+        except Exception as e:
+            print(f"DEBUG: Hospital auto-seeding failed: {e}")
+
 seed_users()
 
 # Initialize ML Model
