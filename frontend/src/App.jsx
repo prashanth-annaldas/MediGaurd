@@ -17,6 +17,7 @@ import AdmitPatient from './components/staff/AdmitPatient'
 import DischargePatient from './components/staff/DischargePatient'
 import QRGenerator from './components/staff/QRGenerator'
 import Appointments from './components/staff/Appointments'
+import DoctorAppointments from './components/doctor/DoctorAppointments'
 import useStore from './store/useStore'
 
 const ProtectedRoute = ({ children, allowedRoles }) => {
@@ -46,8 +47,10 @@ const HospitalRequiredRoute = ({ children }) => {
 const RootRedirect = () => {
     const user = useStore(state => state.user);
     if (!user) return <Navigate to="/login" replace />;
-    if (user.role === 'ADMIN' || user.role === 'STAFF') return <Navigate to="/dashboard" replace />;
-    return <Navigate to="/hospitals" replace />;
+    if (user.role === 'ADMIN') return <Navigate to="/admin/dashboard" replace />;
+    if (user.role === 'STAFF') return <Navigate to="/staff/dashboard" replace />;
+    if (user.role === 'DOCTOR') return <Navigate to="/doctor/appointments" replace />;
+    return <Navigate to="/user/hospitals" replace />;
 }
 
 // Role-aware dashboard router
@@ -66,26 +69,53 @@ export default function App() {
 
             <Route path="/" element={<RootRedirect />} />
 
-            {/* Dashboards */}
-            <Route path="/dashboard" element={<HospitalRequiredRoute><SmartDashboard /></HospitalRequiredRoute>} />
+            {/* Admin Routes */}
+            <Route path="/admin/dashboard" element={<ProtectedRoute allowedRoles={['ADMIN']}><HospitalRequiredRoute><SmartDashboard /></HospitalRequiredRoute></ProtectedRoute>} />
+            <Route path="/admin/staff" element={<ProtectedRoute allowedRoles={['ADMIN']}><StaffDataPage /></ProtectedRoute>} />
+            <Route path="/admin/admin" element={<ProtectedRoute allowedRoles={['ADMIN']}><AdminPanel /></ProtectedRoute>} />
+            <Route path="/admin/resources" element={<ProtectedRoute allowedRoles={['ADMIN']}><HospitalRequiredRoute><ResourcesPage /></HospitalRequiredRoute></ProtectedRoute>} />
+            <Route path="/admin/alerts" element={<ProtectedRoute allowedRoles={['ADMIN']}><HospitalRequiredRoute><AlertCenter /></HospitalRequiredRoute></ProtectedRoute>} />
+            <Route path="/admin/forecast" element={<ProtectedRoute allowedRoles={['ADMIN']}><HospitalRequiredRoute><ForecastDashboard /></HospitalRequiredRoute></ProtectedRoute>} />
+            <Route path="/admin/trends" element={<ProtectedRoute allowedRoles={['ADMIN']}><HospitalRequiredRoute><TrendAnalytics /></HospitalRequiredRoute></ProtectedRoute>} />
+            <Route path="/admin/gemini" element={<ProtectedRoute allowedRoles={['ADMIN']}><GeminiChat /></ProtectedRoute>} />
+            <Route path="/admin/admit" element={<ProtectedRoute allowedRoles={['ADMIN']}><AdmitPatient /></ProtectedRoute>} />
+            <Route path="/admin/discharge" element={<ProtectedRoute allowedRoles={['ADMIN']}><DischargePatient /></ProtectedRoute>} />
+            <Route path="/admin/qr-gen" element={<ProtectedRoute allowedRoles={['ADMIN']}><QRGenerator /></ProtectedRoute>} />
+            <Route path="/admin/appointments" element={<ProtectedRoute allowedRoles={['ADMIN']}><Appointments /></ProtectedRoute>} />
 
-            {/* Admin Only */}
-            <Route path="/staff" element={<ProtectedRoute allowedRoles={['ADMIN']}><StaffDataPage /></ProtectedRoute>} />
-            <Route path="/admin" element={<ProtectedRoute allowedRoles={['ADMIN']}><AdminPanel /></ProtectedRoute>} />
+            {/* Staff Routes */}
+            <Route path="/staff/dashboard" element={<ProtectedRoute allowedRoles={['STAFF']}><HospitalRequiredRoute><SmartDashboard /></HospitalRequiredRoute></ProtectedRoute>} />
+            <Route path="/staff/resources" element={<ProtectedRoute allowedRoles={['STAFF']}><HospitalRequiredRoute><ResourcesPage /></HospitalRequiredRoute></ProtectedRoute>} />
+            <Route path="/staff/alerts" element={<ProtectedRoute allowedRoles={['STAFF']}><HospitalRequiredRoute><AlertCenter /></HospitalRequiredRoute></ProtectedRoute>} />
+            <Route path="/staff/forecast" element={<ProtectedRoute allowedRoles={['STAFF']}><HospitalRequiredRoute><ForecastDashboard /></HospitalRequiredRoute></ProtectedRoute>} />
+            <Route path="/staff/trends" element={<ProtectedRoute allowedRoles={['STAFF']}><HospitalRequiredRoute><TrendAnalytics /></HospitalRequiredRoute></ProtectedRoute>} />
+            <Route path="/staff/gemini" element={<ProtectedRoute allowedRoles={['STAFF']}><GeminiChat /></ProtectedRoute>} />
+            <Route path="/staff/admit" element={<ProtectedRoute allowedRoles={['STAFF']}><AdmitPatient /></ProtectedRoute>} />
+            <Route path="/staff/discharge" element={<ProtectedRoute allowedRoles={['STAFF']}><DischargePatient /></ProtectedRoute>} />
+            <Route path="/staff/qr-gen" element={<ProtectedRoute allowedRoles={['STAFF']}><QRGenerator /></ProtectedRoute>} />
+            <Route path="/staff/appointments" element={<ProtectedRoute allowedRoles={['STAFF']}><Appointments /></ProtectedRoute>} />
 
-            {/* Other routes */}
-            <Route path="/resources" element={<HospitalRequiredRoute><ResourcesPage /></HospitalRequiredRoute>} />
-            <Route path="/alerts" element={<HospitalRequiredRoute><AlertCenter /></HospitalRequiredRoute>} />
-            <Route path="/forecast" element={<HospitalRequiredRoute><ForecastDashboard /></HospitalRequiredRoute>} />
-            <Route path="/trends" element={<HospitalRequiredRoute><TrendAnalytics /></HospitalRequiredRoute>} />
-            <Route path="/gemini" element={<ProtectedRoute><GeminiChat /></ProtectedRoute>} />
-            <Route path="/hospitals" element={<ProtectedRoute><HospitalSearch /></ProtectedRoute>} />
+            {/* Doctor Routes */}
+            <Route path="/doctor/dashboard" element={<ProtectedRoute allowedRoles={['DOCTOR']}><HospitalRequiredRoute><SmartDashboard /></HospitalRequiredRoute></ProtectedRoute>} />
+            <Route path="/doctor/appointments" element={<ProtectedRoute allowedRoles={['DOCTOR']}><DoctorAppointments /></ProtectedRoute>} />
+            <Route path="/doctor/resources" element={<ProtectedRoute allowedRoles={['DOCTOR']}><HospitalRequiredRoute><ResourcesPage /></HospitalRequiredRoute></ProtectedRoute>} />
+            <Route path="/doctor/alerts" element={<ProtectedRoute allowedRoles={['DOCTOR']}><HospitalRequiredRoute><AlertCenter /></HospitalRequiredRoute></ProtectedRoute>} />
+            <Route path="/doctor/forecast" element={<ProtectedRoute allowedRoles={['DOCTOR']}><HospitalRequiredRoute><ForecastDashboard /></HospitalRequiredRoute></ProtectedRoute>} />
+            <Route path="/doctor/trends" element={<ProtectedRoute allowedRoles={['DOCTOR']}><HospitalRequiredRoute><TrendAnalytics /></HospitalRequiredRoute></ProtectedRoute>} />
+            <Route path="/doctor/gemini" element={<ProtectedRoute allowedRoles={['DOCTOR']}><GeminiChat /></ProtectedRoute>} />
 
-            {/* Staff/Admin QR Features */}
-            <Route path="/admit" element={<ProtectedRoute allowedRoles={['ADMIN', 'STAFF']}><AdmitPatient /></ProtectedRoute>} />
-            <Route path="/discharge" element={<ProtectedRoute allowedRoles={['ADMIN', 'STAFF']}><DischargePatient /></ProtectedRoute>} />
-            <Route path="/qr-gen" element={<ProtectedRoute allowedRoles={['ADMIN', 'STAFF']}><QRGenerator /></ProtectedRoute>} />
-            <Route path="/appointments" element={<ProtectedRoute allowedRoles={['ADMIN', 'STAFF']}><Appointments /></ProtectedRoute>} />
+            {/* User Routes */}
+            <Route path="/user/hospitals" element={<ProtectedRoute allowedRoles={['USER']}><HospitalSearch /></ProtectedRoute>} />
+            <Route path="/user/dashboard" element={<ProtectedRoute allowedRoles={['USER']}><HospitalRequiredRoute><SmartDashboard /></HospitalRequiredRoute></ProtectedRoute>} />
+            <Route path="/user/resources" element={<ProtectedRoute allowedRoles={['USER']}><HospitalRequiredRoute><ResourcesPage /></HospitalRequiredRoute></ProtectedRoute>} />
+            <Route path="/user/alerts" element={<ProtectedRoute allowedRoles={['USER']}><HospitalRequiredRoute><AlertCenter /></HospitalRequiredRoute></ProtectedRoute>} />
+            <Route path="/user/forecast" element={<ProtectedRoute allowedRoles={['USER']}><HospitalRequiredRoute><ForecastDashboard /></HospitalRequiredRoute></ProtectedRoute>} />
+            <Route path="/user/trends" element={<ProtectedRoute allowedRoles={['USER']}><HospitalRequiredRoute><TrendAnalytics /></HospitalRequiredRoute></ProtectedRoute>} />
+            <Route path="/user/gemini" element={<ProtectedRoute allowedRoles={['USER']}><GeminiChat /></ProtectedRoute>} />
+
+            {/* Legacy Fallback Redirects to new role-prefixed routes */}
+            <Route path="/hospitals" element={<ProtectedRoute><RootRedirect /></ProtectedRoute>} />
+            <Route path="/dashboard" element={<HospitalRequiredRoute><RootRedirect /></HospitalRequiredRoute>} />
         </Routes>
     )
 }

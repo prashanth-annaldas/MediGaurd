@@ -74,11 +74,15 @@ export default function Login() {
             }, data.access_token);
 
             // Redirect based on role
-            if (data.role === 'ADMIN' || data.role === 'STAFF') {
-                navigate('/dashboard');
+            if (data.role === 'ADMIN') {
+                navigate('/admin/dashboard');
+            } else if (data.role === 'STAFF') {
+                navigate('/staff/dashboard');
+            } else if (data.role === 'DOCTOR') {
+                navigate('/doctor/appointments');
             } else {
                 clearSelectedHospital();
-                navigate('/hospitals');
+                navigate('/user/hospitals');
             }
 
         } catch (err) {

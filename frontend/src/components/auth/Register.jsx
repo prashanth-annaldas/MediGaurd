@@ -75,7 +75,15 @@ export default function Register() {
                 hospital_name: data.hospital_name || null
             }, data.access_token);
 
-            navigate('/');
+            if (data.role === 'ADMIN') {
+                navigate('/admin/dashboard');
+            } else if (data.role === 'STAFF') {
+                navigate('/staff/dashboard');
+            } else if (data.role === 'DOCTOR') {
+                navigate('/doctor/appointments');
+            } else {
+                navigate('/user/hospitals');
+            }
         } catch (err) {
             console.error("Registration error:", err);
             setError(err.message || 'Registration failed. Please try again.');
@@ -182,6 +190,7 @@ export default function Register() {
                                 className="w-full bg-[var(--bg-card)]/50 border border-navy-700 text-[var(--text-primary)] px-4 py-2.5 rounded-xl appearance-none focus:outline-none focus:ring-2 focus:ring-teal-500/50 focus:border-teal-500/50 transition-all"
                             >
                                 <option value="USER" className="bg-[var(--bg-secondary)] text-[var(--text-primary)]">User</option>
+                                <option value="DOCTOR" className="bg-[var(--bg-secondary)] text-[var(--text-primary)]">Doctor</option>
                                 <option value="STAFF" className="bg-[var(--bg-secondary)] text-[var(--text-primary)]">Staff</option>
                                 <option value="ADMIN" className="bg-[var(--bg-secondary)] text-[var(--text-primary)]">Admin</option>
                             </select>
@@ -191,8 +200,8 @@ export default function Register() {
                         </div>
                     </div>
 
-                    {/* Hospital name picker — for ADMIN and STAFF */}
-                    {(role === 'ADMIN' || role === 'STAFF') && (
+                    {/* Hospital name picker — for ADMIN, STAFF, and DOCTOR */}
+                    {(role === 'ADMIN' || role === 'STAFF' || role === 'DOCTOR') && (
                         <div className="space-y-1">
                             <label className="text-xs font-medium text-[var(--text-muted)] ml-1">
                                 Hospital Name <span className="text-red-400">*</span>
@@ -241,7 +250,7 @@ export default function Register() {
 
                     <button
                         type="submit"
-                        disabled={loading || !email || !password || !confirmPassword || !firstName || !lastName || ((role === 'ADMIN' || role === 'STAFF') && !hospitalName)}
+                        disabled={loading || !email || !password || !confirmPassword || !firstName || !lastName || ((role === 'ADMIN' || role === 'STAFF' || role === 'DOCTOR') && !hospitalName)}
                         className="w-full mt-2 bg-teal-500 hover:bg-teal-400 text-navy-950 font-semibold py-2.5 rounded-xl transition-all shadow-[0_0_20px_rgba(20,184,166,0.2)] hover:shadow-[0_0_25px_rgba(20,184,166,0.4)] disabled:opacity-50 flex items-center justify-center gap-2"
                     >
                         {loading && <Loader2 className="w-4 h-4 animate-spin" />}

@@ -30,11 +30,12 @@ export default function Sidebar() {
     const navigate = useNavigate()
 
     const handleLogoClick = () => {
+        const rolePrefix = user?.role?.toLowerCase() || 'user';
         if (user?.role !== 'ADMIN' && user?.role !== 'STAFF') {
             clearSelectedHospital();
-            navigate('/hospitals');
+            navigate(`/${rolePrefix}/hospitals`);
         } else {
-            navigate('/dashboard');
+            navigate(`/${rolePrefix}/dashboard`);
         }
     };
 
@@ -74,23 +75,46 @@ export default function Sidebar() {
             {/* Nav */}
             <nav className="flex-1 px-2 space-y-1 overflow-y-auto overflow-x-hidden py-2">
                 {navItems.map(({ to, icon: Icon, label, end, adminOnly, userOnly, staffOnly, requiresSelectedHospital, alwaysShowForUser }) => {
+                    const rolePrefix = user?.role?.toLowerCase() || 'user';
+
                     if (adminOnly && user?.role !== 'ADMIN') return null;
                     if (userOnly && (user?.role === 'ADMIN' || user?.role === 'STAFF')) return null;
                     if (requiresSelectedHospital && !selectedHospital && user?.role !== 'ADMIN' && user?.role !== 'STAFF') return null;
 
                     // Staff features (Admit/Discharge/QR Gen/Appointments) should be visible to Staff and Admins
+                    // For Doctors, ONLY show Appointments
                     if (staffOnly) {
-                        if (user?.role !== 'STAFF' && user?.role !== 'ADMIN') return null;
+                        if (user?.role === 'DOCTOR' && label !== 'Appointments') return null;
+                        if (user?.role !== 'STAFF' && user?.role !== 'ADMIN' && user?.role !== 'DOCTOR') return null;
                     } else if (user?.role !== 'ADMIN' && user?.role !== 'STAFF') {
-                        // For normal users (not ADMIN, not STAFF)
+                        // For normal users or doctors
+                        // Doctors should ONLY see Appointments (handled by staffOnly check above)
+                        // If we are here, it's not a staffOnly item.
+                        // For DOCTOR role, we don't want to show anything else.
+                        if (user?.role === 'DOCTOR') return null;
+
+                        // For normal users (not ADMIN, not STAFF, not DOCTOR)
                         // Show if alwaysShowForUser OR if it requiresSelectedHospital and we have a selectedHospital
                         if (!alwaysShowForUser && !(requiresSelectedHospital && selectedHospital)) return null;
+                    }
+
+                    // Construct the final URL with role prefix
+                    let finalTo = to;
+                    if (to.startsWith('/')) {
+                        // Special cases for admin-only pages that were already mapped in App.jsx
+                        if (to === '/admin' && user?.role === 'ADMIN') {
+                            finalTo = '/admin/admin';
+                        } else if (to === '/staff' && user?.role === 'ADMIN') {
+                            finalTo = '/admin/staff';
+                        } else {
+                            finalTo = `/${rolePrefix}${to}`;
+                        }
                     }
 
                     return (
                         <NavLink
                             key={to}
-                            to={to}
+                            to={finalTo}
                             end={end}
                             className={({ isActive }) =>
                                 `sidebar-nav-item ${isActive ? 'active' : ''}`
@@ -98,7 +122,11 @@ export default function Sidebar() {
                             title={sidebarCollapsed ? label : undefined}
                             style={{ justifyContent: sidebarCollapsed ? 'center' : 'flex-start' }}
                         >
-                            {label === 'Alert Center' && unreadAlertCount > 0 && (
+                            <div className="flex items-center gap-3">
+                                <Icon size={18} className="flex-shrink-0" />
+                                {!sidebarCollapsed && <span>{label}</span>}
+                            </div>
+                            {label === 'Alert Center' && !sidebarCollapsed && unreadAlertCount > 0 && (
                                 <span
                                     className="rounded-full flex items-center justify-center font-bold text-white flex-shrink-0"
                                     style={{
@@ -111,7 +139,6 @@ export default function Sidebar() {
                                     {unreadAlertCount > 9 ? '9+' : unreadAlertCount}
                                 </span>
                             )}
-                            <span>{label}</span>
                         </NavLink>
                     )
                 })}

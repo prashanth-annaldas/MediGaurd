@@ -58,7 +58,8 @@ const HospitalSearch = () => {
 
     const handleAnalysis = (hospital) => {
         setSelectedHospital(hospital);
-        navigate('/dashboard');
+        const rolePrefix = user?.role?.toLowerCase() || 'user';
+        navigate(`/${rolePrefix}/dashboard`);
     };
 
     const getInitials = (name) => {

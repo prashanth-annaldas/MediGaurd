@@ -106,7 +106,7 @@ def register(user: UserCreate, db: Session = Depends(get_db)):
         email=user.email, 
         password=hashed_password,
         role=user.role,
-        hospital_name=user.hospital_name if user.role in ["ADMIN", "STAFF"] else None
+        hospital_name=user.hospital_name if user.role in ["ADMIN", "STAFF", "DOCTOR"] else None
     )
     db.add(new_user)
     db.commit()

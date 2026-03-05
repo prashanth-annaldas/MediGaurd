@@ -1002,18 +1002,9 @@ class AppointmentExtractRequest(BaseModel):
 
 class AppointmentExtractResponse(BaseModel):
     specialization: Optional[str] = None
+    doctor_name: Optional[str] = None
     date: Optional[str] = None # YYYY-MM-DD
     time: Optional[str] = None # HH:MM
-    missing_fields: List[str] = []
-
-class AppointmentExtractRequest(BaseModel):
-    message: str
-
-class AppointmentExtractResponse(BaseModel):
-    specialization: Optional[str] = None
-    doctor_name: Optional[str] = None
-    date: Optional[str] = None
-    time: Optional[str] = None
     missing_fields: List[str] = []
 
 class AppointmentCreate(BaseModel):
@@ -1153,24 +1144,53 @@ def create_appointment(data: AppointmentCreate, db: Session = Depends(get_db), c
 
 @app.get("/api/appointments", response_model=List[AppointmentResponse])
 def get_appointments(db: Session = Depends(get_db), current_user: models.User = Depends(auth.get_current_user)):
-    """List appointments. 
-    If user is STAFF/ADMIN, return all for their hospital.
-    If regular USER, return their own appointments.
+    """List appointments.
+    - ADMIN/STAFF: all appointments for their hospital
+    - DOCTOR: only appointments where doctor_name matches their registered name (with or without 'Dr.' prefix)
+    - USER: their own booked appointments
     """
-    if current_user.role in ["STAFF", "ADMIN"]:
-        if current_user.hospital_name:
-            # Flexible matching for hospital names
-            h_name = current_user.hospital_name.strip()
-            print(f"DEBUG: Fetching appointments for hospital: '{h_name}'")
-            appts = db.query(models.Appointment).filter(
-                func.lower(func.trim(models.Appointment.hospital_name)) == func.lower(func.trim(h_name))
+    try:
+        if current_user.role in ["STAFF", "ADMIN"]:
+            if not current_user.hospital_name:
+                return []
+            h_name = current_user.hospital_name.strip().lower()
+            return db.query(models.Appointment).filter(
+                func.lower(models.Appointment.hospital_name) == h_name
             ).all()
-            print(f"DEBUG: Found {len(appts)} appointments")
-            return appts
+
+        elif current_user.role == "DOCTOR":
+            if not current_user.hospital_name:
+                return []
+            h_name = current_user.hospital_name.strip().lower()
+            # Normalize name: strip leading "Dr." / "dr." for both sides
+            import re
+            def strip_dr(name: str) -> str:
+                return re.sub(r'^dr\.?\s*', '', name, flags=re.IGNORECASE).strip().lower()
+
+            doctor_base = strip_dr(current_user.name)
+
+            # Fetch all appointments for this hospital, then filter by name in Python
+            # (SQLite doesn't support regex; Python-side is safe at this scale)
+            hospital_appts = db.query(models.Appointment).filter(
+                func.lower(models.Appointment.hospital_name) == h_name
+            ).all()
+
+            return [
+                appt for appt in hospital_appts
+                if appt.doctor_name and strip_dr(appt.doctor_name) == doctor_base
+            ]
+
         else:
-            return [] # Staff with no hospital assigned
-    else:
-        return db.query(models.Appointment).filter(models.Appointment.user_id == current_user.id).all()
+            # USER: their own bookings
+            return db.query(models.Appointment).filter(
+                models.Appointment.user_id == current_user.id
+            ).all()
+
+    except Exception as e:
+        import traceback
+        traceback.print_exc()
+        raise HTTPException(status_code=500, detail=str(e))
+
 
 @app.get("/api/admin/debug/appointments")
 def debug_list_appointments(db: Session = Depends(get_db), current_user: models.User = Depends(auth.get_current_admin_user)):

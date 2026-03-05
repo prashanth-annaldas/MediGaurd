@@ -106,7 +106,7 @@ export default function Topbar({ title = 'Dashboard' }) {
                 {/* Alerts bell */}
                 <div className="relative">
                     <Link
-                        to="/alerts"
+                        to={`/${user?.role?.toLowerCase() || 'user'}/alerts`}
                         title="Alerts"
                         className="flex items-center justify-center rounded-lg transition-all duration-200"
                         style={{

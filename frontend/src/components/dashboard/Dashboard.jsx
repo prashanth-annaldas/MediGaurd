@@ -178,7 +178,7 @@ export default function Dashboard() {
                             </div>
                         ))}
                     </div>
-                    <button onClick={() => navigate('/gemini')} className="btn-primary mt-4 w-full justify-center text-xs">
+                    <button onClick={() => navigate(`/${user?.role?.toLowerCase() || 'user'}/gemini`)} className="btn-primary mt-4 w-full justify-center text-xs">
                         <Brain size={13} /> Ask AI a Question
                     </button>
                 </div>
@@ -198,7 +198,7 @@ export default function Dashboard() {
             </div>
             <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-4">
                 {resources.map(r => (
-                    <StatCard key={r.id} resource={r} onClick={() => navigate('/resources')} />
+                    <StatCard key={r.id} resource={r} onClick={() => navigate(`/${user?.role?.toLowerCase() || 'user'}/resources`)} />
                 ))}
             </div>
         </Layout>
