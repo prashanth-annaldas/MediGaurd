@@ -360,3 +360,183 @@ body {
 .recharts-cartesian-grid-vertical line {
     stroke: rgba(45, 212, 191, 0.06) !important;
 }
+
+/* ─── Dark Theme Overrides ───────────────────────────────────────────────── */
+/* Remap hardcoded Tailwind gray/white utilities to dark-mode-friendly values */
+
+:root:not([data-theme="light"]) {
+
+    /* ── Text Colors ──────────────────────────────────────────────────────── */
+    /* Dark text → light text */
+    .text-gray-900,
+    .text-slate-900 {
+        color: #f1f5f9 !important;
+    }
+
+    .text-gray-800,
+    .text-slate-800 {
+        color: #e2e8f0 !important;
+    }
+
+    .text-gray-700,
+    .text-slate-700 {
+        color: #cbd5e1 !important;
+    }
+
+    .text-gray-600,
+    .text-slate-600 {
+        color: #94a3b8 !important;
+    }
+
+    .text-gray-500,
+    .text-slate-500 {
+        color: #64748b !important;
+    }
+
+    .text-gray-400,
+    .text-slate-400 {
+        color: #94a3b8 !important;
+    }
+
+    .text-black {
+        color: #f1f5f9 !important;
+    }
+
+    /* ── Background Colors ────────────────────────────────────────────────── */
+    /* White / light surfaces → dark surfaces */
+    .bg-white {
+        background-color: rgba(10, 22, 40, 0.85) !important;
+    }
+
+    .bg-gray-50 {
+        background-color: rgba(10, 22, 40, 0.6) !important;
+    }
+
+    .bg-gray-100 {
+        background-color: rgba(13, 30, 54, 0.8) !important;
+    }
+
+    .bg-gray-200 {
+        background-color: rgba(17, 38, 68, 0.8) !important;
+    }
+
+    .bg-red-50 {
+        background-color: rgba(239, 68, 68, 0.15) !important;
+    }
+
+    .bg-green-50 {
+        background-color: rgba(16, 185, 129, 0.15) !important;
+    }
+
+    .bg-blue-50 {
+        background-color: rgba(59, 130, 246, 0.15) !important;
+    }
+
+    .bg-yellow-50 {
+        background-color: rgba(245, 158, 11, 0.15) !important;
+    }
+
+    .bg-orange-50 {
+        background-color: rgba(249, 115, 22, 0.15) !important;
+    }
+
+    /* ── Border Colors ────────────────────────────────────────────────────── */
+    .border-gray-100,
+    .border-gray-200,
+    .border-gray-300 {
+        border-color: rgba(45, 212, 191, 0.12) !important;
+    }
+
+    /* ── Hover states ─────────────────────────────────────────────────────── */
+    .hover\:bg-gray-50:hover {
+        background-color: rgba(13, 30, 54, 0.6) !important;
+    }
+
+    .hover\:bg-gray-100:hover {
+        background-color: rgba(13, 30, 54, 0.8) !important;
+    }
+
+    .hover\:text-gray-600:hover,
+    .hover\:text-gray-700:hover {
+        color: #e2e8f0 !important;
+    }
+
+    .hover\:border-gray-300:hover {
+        border-color: rgba(45, 212, 191, 0.25) !important;
+    }
+
+    .hover\:text-blue-600:hover {
+        color: #60a5fa !important;
+    }
+
+    /* ── Placeholder ──────────────────────────────────────────────────────── */
+    .placeholder-gray-400::placeholder,
+    .placeholder\:text-gray-400::placeholder,
+    .placeholder\:text-gray-600::placeholder {
+        color: #475569 !important;
+    }
+
+    /* ── Table / Data page overrides ──────────────────────────────────────── */
+    thead {
+        background-color: rgba(10, 22, 40, 0.9) !important;
+    }
+
+    tbody tr {
+        border-color: rgba(45, 212, 191, 0.08) !important;
+    }
+
+    tbody tr:hover {
+        background-color: rgba(45, 212, 191, 0.05) !important;
+    }
+
+    /* ── Input / Select overrides ─────────────────────────────────────────── */
+    select,
+    input[type="text"],
+    input[type="email"],
+    input[type="password"],
+    input[type="number"],
+    input[type="date"],
+    input[type="time"],
+    textarea {
+        color: var(--text-primary) !important;
+        background-color: var(--bg-secondary) !important;
+        border-color: var(--border-color) !important;
+    }
+
+    select option {
+        background-color: var(--bg-secondary) !important;
+        color: var(--text-primary) !important;
+    }
+
+    /* ── Focus ring override for dark ─────────────────────────────────────── */
+    .focus\:ring-blue-500:focus {
+        --tw-ring-color: rgba(45, 212, 191, 0.5) !important;
+    }
+
+    .focus\:border-blue-500:focus {
+        border-color: rgba(45, 212, 191, 0.5) !important;
+    }
+
+    /* ── Shadow tweaks ───────────────────────────────────────────────────── */
+    .shadow-sm,
+    .shadow {
+        box-shadow: 0 1px 3px rgba(0, 0, 0, 0.4) !important;
+    }
+
+    .shadow-lg,
+    .shadow-xl {
+        box-shadow: 0 8px 24px rgba(0, 0, 0, 0.6) !important;
+    }
+
+    /* ── Divide colors ───────────────────────────────────────────────────── */
+    .divide-gray-100> :not(:first-child),
+    .divide-gray-200> :not(:first-child) {
+        border-color: rgba(45, 212, 191, 0.08) !important;
+    }
+
+    /* ── Ring colors ─────────────────────────────────────────────────────── */
+    .ring-gray-200,
+    .ring-gray-300 {
+        --tw-ring-color: rgba(45, 212, 191, 0.15) !important;
+    }
+}
