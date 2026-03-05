@@ -65,7 +65,7 @@ export default function Sidebar() {
                 </div>
                 {!sidebarCollapsed && (
                     <div className="overflow-hidden">
-                        <p className="font-bold text-sm text-gradient leading-tight tracking-wide">MedGuard</p>
+                        <p className="font-bold text-sm text-gradient leading-tight tracking-wide">MediGuard</p>
                         <p className="text-xs font-medium" style={{ color: 'var(--text-muted)' }}>AI Platform</p>
                     </div>
                 )}
