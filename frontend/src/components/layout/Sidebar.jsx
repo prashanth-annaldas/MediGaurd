@@ -1,9 +1,9 @@
-import React from 'react'
+import React, { useState, useEffect } from 'react'
 import { NavLink, useLocation, useNavigate } from 'react-router-dom'
 import {
     LayoutDashboard, Activity, Bell, TrendingUp,
-    Brain, Settings, ChevronLeft, ChevronRight,
-    Shield, Plus, Users, MapPin, UserPlus, UserMinus, QrCode, CalendarDays
+    Brain, Settings, ChevronLeft, ChevronRight, ChevronDown,
+    Shield, Plus, Users, MapPin, UserPlus, UserMinus, QrCode, CalendarDays, Stethoscope
 } from 'lucide-react'
 import useStore from '../../store/useStore'
 import { useClock } from '../../hooks/useClock'
@@ -25,9 +25,25 @@ const navItems = [
 ]
 
 export default function Sidebar() {
-    const { sidebarCollapsed, toggleSidebar, unreadAlertCount, user, selectedHospital, clearSelectedHospital } = useStore()
+    const { sidebarCollapsed, toggleSidebar, unreadAlertCount, user, token, selectedHospital, clearSelectedHospital } = useStore()
     const now = useClock()
     const navigate = useNavigate()
+    const location = useLocation()
+
+    const [appointmentsExpanded, setAppointmentsExpanded] = useState(true)
+    const [hospitalDoctors, setHospitalDoctors] = useState([])
+
+    // Fetch all doctors at this hospital when user is DOCTOR
+    useEffect(() => {
+        if (user?.role === 'DOCTOR' && token) {
+            fetch('/api/hospital/doctors', {
+                headers: { 'Authorization': `Bearer ${token}` }
+            })
+                .then(r => r.ok ? r.json() : [])
+                .then(data => setHospitalDoctors(Array.isArray(data) ? data : []))
+                .catch(() => setHospitalDoctors([]))
+        }
+    }, [user, token])
 
     const handleLogoClick = () => {
         const rolePrefix = user?.role?.toLowerCase() || 'user';
@@ -38,6 +54,16 @@ export default function Sidebar() {
             navigate(`/${rolePrefix}/dashboard`);
         }
     };
+
+    const handleDoctorSelect = (doctorName) => {
+        navigate(`/doctor/appointments?doctor=${encodeURIComponent(doctorName)}`)
+    }
+
+    // Check if the current route is /doctor/appointments
+    const isOnAppointments = location.pathname.startsWith('/doctor/appointments')
+    // Get currently selected doctor from URL
+    const urlParams = new URLSearchParams(location.search)
+    const selectedDoctor = urlParams.get('doctor') || ''
 
     return (
         <aside
@@ -81,27 +107,17 @@ export default function Sidebar() {
                     if (userOnly && (user?.role === 'ADMIN' || user?.role === 'STAFF')) return null;
                     if (requiresSelectedHospital && !selectedHospital && user?.role !== 'ADMIN' && user?.role !== 'STAFF') return null;
 
-                    // Staff features (Admit/Discharge/QR Gen/Appointments) should be visible to Staff and Admins
-                    // For Doctors, ONLY show Appointments
                     if (staffOnly) {
                         if (user?.role === 'DOCTOR' && label !== 'Appointments') return null;
                         if (user?.role !== 'STAFF' && user?.role !== 'ADMIN' && user?.role !== 'DOCTOR') return null;
                     } else if (user?.role !== 'ADMIN' && user?.role !== 'STAFF') {
-                        // For normal users or doctors
-                        // Doctors should ONLY see Appointments (handled by staffOnly check above)
-                        // If we are here, it's not a staffOnly item.
-                        // For DOCTOR role, we don't want to show anything else.
                         if (user?.role === 'DOCTOR') return null;
-
-                        // For normal users (not ADMIN, not STAFF, not DOCTOR)
-                        // Show if alwaysShowForUser OR if it requiresSelectedHospital and we have a selectedHospital
                         if (!alwaysShowForUser && !(requiresSelectedHospital && selectedHospital)) return null;
                     }
 
-                    // Construct the final URL with role prefix
+                    // Build final URL
                     let finalTo = to;
                     if (to.startsWith('/')) {
-                        // Special cases for admin-only pages that were already mapped in App.jsx
                         if (to === '/admin' && user?.role === 'ADMIN') {
                             finalTo = '/admin/admin';
                         } else if (to === '/staff' && user?.role === 'ADMIN') {
@@ -109,6 +125,85 @@ export default function Sidebar() {
                         } else {
                             finalTo = `/${rolePrefix}${to}`;
                         }
+                    }
+
+                    // Special rendering for Appointments in DOCTOR role — show sub-menu
+                    if (label === 'Appointments' && user?.role === 'DOCTOR') {
+                        return (
+                            <div key={to}>
+                                {/* Main Appointments button */}
+                                <button
+                                    onClick={() => {
+                                        setAppointmentsExpanded(prev => !prev)
+                                        if (!isOnAppointments) navigate(finalTo)
+                                    }}
+                                    className={`sidebar-nav-item w-full ${isOnAppointments ? 'active' : ''}`}
+                                    style={{ justifyContent: sidebarCollapsed ? 'center' : 'space-between' }}
+                                    title={sidebarCollapsed ? label : undefined}
+                                >
+                                    <div className="flex items-center gap-3">
+                                        <Icon size={18} className="flex-shrink-0" />
+                                        {!sidebarCollapsed && <span>{label}</span>}
+                                    </div>
+                                    {!sidebarCollapsed && (
+                                        <ChevronDown
+                                            size={14}
+                                            className="flex-shrink-0 transition-transform duration-200"
+                                            style={{ transform: appointmentsExpanded ? 'rotate(180deg)' : 'rotate(0deg)' }}
+                                        />
+                                    )}
+                                </button>
+
+                                {/* Sub-menu: doctor names */}
+                                {!sidebarCollapsed && appointmentsExpanded && (
+                                    <div className="ml-3 mt-1 space-y-0.5 border-l-2 pl-3" style={{ borderColor: 'var(--border-color)' }}>
+                                        {/* "All My Appointments" shortcut */}
+                                        <button
+                                            onClick={() => navigate('/doctor/appointments')}
+                                            className={`w-full text-left px-2 py-1.5 rounded-lg text-xs flex items-center gap-2 transition-colors ${!selectedDoctor ? 'font-semibold' : 'opacity-70 hover:opacity-100'}`}
+                                            style={{
+                                                color: !selectedDoctor ? 'var(--teal-strong, #2dd4bf)' : 'var(--text-muted)',
+                                                background: !selectedDoctor ? 'rgba(45,212,191,0.08)' : 'transparent',
+                                            }}
+                                        >
+                                            <Stethoscope size={12} />
+                                            My Appointments
+                                        </button>
+
+                                        {/* One entry per doctor at the hospital */}
+                                        {hospitalDoctors.map((doc, idx) => {
+                                            const name = doc.name || doc
+                                            const isSelected = selectedDoctor === name
+                                            return (
+                                                <button
+                                                    key={idx}
+                                                    onClick={() => handleDoctorSelect(name)}
+                                                    className={`w-full text-left px-2 py-1.5 rounded-lg text-xs flex items-center gap-2 transition-colors ${isSelected ? 'font-semibold' : 'opacity-70 hover:opacity-100'}`}
+                                                    style={{
+                                                        color: isSelected ? 'var(--teal-strong, #2dd4bf)' : 'var(--text-muted)',
+                                                        background: isSelected ? 'rgba(45,212,191,0.08)' : 'transparent',
+                                                    }}
+                                                >
+                                                    <span
+                                                        className="w-4 h-4 rounded-full flex-shrink-0 flex items-center justify-center text-[9px] font-bold"
+                                                        style={{ background: 'var(--teal-strong, #2dd4bf)', color: '#fff' }}
+                                                    >
+                                                        {(name[0] || '?').toUpperCase()}
+                                                    </span>
+                                                    <span className="truncate">{name}</span>
+                                                </button>
+                                            )
+                                        })}
+
+                                        {hospitalDoctors.length === 0 && (
+                                            <p className="px-2 py-1 text-xs opacity-40" style={{ color: 'var(--text-muted)' }}>
+                                                No doctors found
+                                            </p>
+                                        )}
+                                    </div>
+                                )}
+                            </div>
+                        )
                     }
 
                     return (

@@ -1,5 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { Calendar, Clock, User, Phone, CheckCircle, XCircle, Activity, Stethoscope } from 'lucide-react';
+import { useLocation } from 'react-router-dom';
 import Layout from '../layout/Layout';
 import useStore from '../../store/useStore';
 
@@ -9,22 +10,31 @@ export default function DoctorAppointments() {
     const [error, setError] = useState(null);
     const token = useStore(state => state.token);
     const user = useStore(state => state.user);
+    const location = useLocation();
+
+    // Read the ?doctor=name query param
+    const urlParams = new URLSearchParams(location.search);
+    const selectedDoctor = urlParams.get('doctor') || '';
 
     useEffect(() => {
         fetchAppointments();
-    }, [token, user]);
+    }, [token, location.search]);
 
     const fetchAppointments = async () => {
         if (!token) return;
         setLoading(true);
+        setError(null);
         try {
-            const res = await fetch(`/api/appointments`, {
+            // Pass the doctor_name query param so the backend filters correctly
+            const url = selectedDoctor
+                ? `/api/appointments?doctor_name=${encodeURIComponent(selectedDoctor)}`
+                : `/api/appointments`;
+            const res = await fetch(url, {
                 headers: { 'Authorization': `Bearer ${token}` }
             });
             if (!res.ok) throw new Error('Failed to fetch appointments');
             const data = await res.json();
 
-            // Backend already filters by doctor name + hospital — no client-side filter needed
             // Sort by date/time (most recent first)
             data.sort((a, b) => new Date(`${b.date}T${b.time}`) - new Date(`${a.date}T${a.time}`));
             setAppointments(data);
@@ -49,9 +59,14 @@ export default function DoctorAppointments() {
             <div className="max-w-7xl mx-auto py-6 px-4">
                 <div className="flex justify-between items-center mb-6">
                     <div>
-                        <h1 className="text-2xl font-bold text-[var(--text-primary)]">My Appointments</h1>
+                        <h1 className="text-2xl font-bold text-[var(--text-primary)]">
+                            {selectedDoctor ? `${selectedDoctor}'s Appointments` : 'My Appointments'}
+                        </h1>
                         <p className="text-[var(--text-muted)] text-sm mt-1">
-                            Welcome, Dr. {user?.displayName || user?.name}. Here are your upcoming patient bookings at {user?.hospital_name}.
+                            {selectedDoctor
+                                ? `Viewing appointments for ${selectedDoctor} at ${user?.hospital_name}.`
+                                : `Welcome, Dr. ${user?.displayName || user?.name}. Here are your upcoming patient bookings at ${user?.hospital_name}.`
+                            }
                         </p>
                     </div>
                 </div>
