@@ -3,7 +3,7 @@ import { NavLink, useLocation, useNavigate } from 'react-router-dom'
 import {
     LayoutDashboard, Activity, Bell, TrendingUp,
     Brain, Settings, ChevronLeft, ChevronRight,
-    Shield, Zap, Users, MapPin, UserPlus, UserMinus, QrCode, CalendarDays
+    Shield, Plus, Users, MapPin, UserPlus, UserMinus, QrCode, CalendarDays
 } from 'lucide-react'
 import useStore from '../../store/useStore'
 import { useClock } from '../../hooks/useClock'
@@ -57,11 +57,11 @@ export default function Sidebar() {
                     className="flex-shrink-0 flex items-center justify-center rounded-xl"
                     style={{
                         width: 36, height: 36,
-                        background: 'linear-gradient(135deg, #14b8a6, #0891b2)',
-                        boxShadow: '0 0 16px rgba(20, 184, 166, 0.4)',
+                        background: '#22c55e',
+                        boxShadow: '0 0 16px rgba(34, 197, 94, 0.4)',
                     }}
                 >
-                    <Zap size={18} color="white" />
+                    <Plus size={20} color="white" strokeWidth={3} />
                 </div>
                 {!sidebarCollapsed && (
                     <div className="overflow-hidden">
@@ -98,23 +98,20 @@ export default function Sidebar() {
                             title={sidebarCollapsed ? label : undefined}
                             style={{ justifyContent: sidebarCollapsed ? 'center' : 'flex-start' }}
                         >
-                            <div className="relative flex-shrink-0">
-                                <Icon size={18} />
-                                {label === 'Alert Center' && unreadAlertCount > 0 && (
-                                    <span
-                                        className="absolute -top-1.5 -right-1.5 text-[var(--text-primary)] rounded-full flex items-center justify-center font-bold"
-                                        style={{
-                                            fontSize: '9px',
-                                            width: 16, height: 16,
-                                            background: '#ef4444',
-                                            boxShadow: '0 0 8px rgba(239, 68, 68, 0.6)',
-                                        }}
-                                    >
-                                        {unreadAlertCount > 9 ? '9+' : unreadAlertCount}
-                                    </span>
-                                )}
-                            </div>
-                            {!sidebarCollapsed && <span>{label}</span>}
+                            {label === 'Alert Center' && unreadAlertCount > 0 && (
+                                <span
+                                    className="rounded-full flex items-center justify-center font-bold text-white flex-shrink-0"
+                                    style={{
+                                        fontSize: '9px',
+                                        width: 16, height: 16,
+                                        background: '#ef4444',
+                                        boxShadow: '0 0 8px rgba(239, 68, 68, 0.6)',
+                                    }}
+                                >
+                                    {unreadAlertCount > 9 ? '9+' : unreadAlertCount}
+                                </span>
+                            )}
+                            <span>{label}</span>
                         </NavLink>
                     )
                 })}
