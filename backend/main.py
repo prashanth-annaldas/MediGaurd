@@ -234,6 +234,42 @@ def get_status(utilization: float, resource: dict) -> str:
 
 # ─── API Routes ──────────────────────────────────────────────────────────────
 
+# ─── User Hospital Self-Update ────────────────────────────────────────────────
+
+class HospitalUpdateRequest(BaseModel):
+    hospital_name: str
+
+@app.patch("/api/user/hospital")
+def update_user_hospital(
+    req: HospitalUpdateRequest,
+    db: Session = Depends(get_db),
+    current_user: models.User = Depends(auth.get_current_user)
+):
+    """Allow a doctor (or any authenticated user) to set / update their assigned hospital."""
+    hospital = db.query(models.Hospital).filter(
+        func.lower(models.Hospital.name) == req.hospital_name.strip().lower()
+    ).first()
+    if not hospital:
+        raise HTTPException(status_code=404, detail=f"Hospital '{req.hospital_name}' not found")
+
+    current_user.hospital_name = hospital.name  # use the exact casing from the DB
+    db.commit()
+    db.refresh(current_user)
+
+    # Issue a fresh token so the frontend can update the stored user object
+    new_token = auth.create_access_token(data={
+        "sub": current_user.email,
+        "role": current_user.role,
+        "hospital_name": current_user.hospital_name,
+        "name": current_user.name,
+    })
+    return {
+        "message": "Hospital updated successfully",
+        "hospital_name": current_user.hospital_name,
+        "access_token": new_token,
+        "token_type": "bearer"
+    }
+
 @app.get("/")
 def root():
     return {"app": "MedGuard AI", "status": "operational", "version": "1.0.0"}
