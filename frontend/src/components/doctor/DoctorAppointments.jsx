@@ -10,6 +10,7 @@ export default function DoctorAppointments() {
     const [error, setError] = useState(null);
     const token = useStore(state => state.token);
     const user = useStore(state => state.user);
+    const selectedHospital = useStore(state => state.selectedHospital);
     const location = useLocation();
 
     // Read the ?doctor=name query param
@@ -25,10 +26,14 @@ export default function DoctorAppointments() {
         setLoading(true);
         setError(null);
         try {
-            // Pass the doctor_name query param so the backend filters correctly
+            // Build URL with fallbacks for doctor_name and hospital_name
+            // hospital_name fallback handles existing accounts where hospital_name is null in DB
+            const hospitalFallback = !user?.hospital_name && selectedHospital?.name
+                ? `&hospital_name=${encodeURIComponent(selectedHospital.name)}`
+                : '';
             const url = selectedDoctor
-                ? `/api/appointments?doctor_name=${encodeURIComponent(selectedDoctor)}`
-                : `/api/appointments`;
+                ? `/api/appointments?doctor_name=${encodeURIComponent(selectedDoctor)}${hospitalFallback}`
+                : `/api/appointments${hospitalFallback ? `?${hospitalFallback.slice(1)}` : ''}`;
             const res = await fetch(url, {
                 headers: { 'Authorization': `Bearer ${token}` }
             });

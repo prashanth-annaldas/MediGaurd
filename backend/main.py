@@ -955,14 +955,20 @@ def delete_staff(staff_id: int, db: Session = Depends(get_db), current_user: mod
 # ─── Hospital Doctors List ────────────────────────────────────────────────────
 
 @app.get("/api/hospital/doctors")
-def get_hospital_doctors(db: Session = Depends(get_db), current_user: models.User = Depends(auth.get_current_user)):
+def get_hospital_doctors(
+    hospital_name: Optional[str] = None,
+    db: Session = Depends(get_db),
+    current_user: models.User = Depends(auth.get_current_user)
+):
     """Return all doctors at the current user's hospital (from the Hospital.doctors JSON field).
-    Available to DOCTOR, STAFF, and ADMIN roles that have a hospital_name set.
+    Falls back to the hospital_name query param if the user's account has no hospital assigned.
     """
-    if not current_user.hospital_name:
+    # Prefer the user's stored hospital_name; fall back to query param
+    h_name = (current_user.hospital_name or hospital_name or '').strip()
+    if not h_name:
         return []
     hospital = db.query(models.Hospital).filter(
-        func.lower(models.Hospital.name) == current_user.hospital_name.strip().lower()
+        func.lower(models.Hospital.name) == h_name.lower()
     ).first()
     if not hospital or not hospital.doctors:
         return []
@@ -1179,9 +1185,10 @@ def get_appointments(
 
     try:
         if current_user.role in ["STAFF", "ADMIN", "DOCTOR"]:
-            if not current_user.hospital_name:
+            # Prefer the DB-stored hospital_name; fall back to query param (for existing accounts missing it)
+            h_name = (current_user.hospital_name or hospital_name or '').strip().lower()
+            if not h_name:
                 return []
-            h_name = current_user.hospital_name.strip().lower()
 
             # Fetch all appointments for this hospital
             hospital_appts = db.query(models.Appointment).filter(

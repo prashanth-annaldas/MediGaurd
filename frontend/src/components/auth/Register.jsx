@@ -56,7 +56,7 @@ export default function Register() {
                     email,
                     password,
                     role: role,
-                    hospital_name: (role === 'ADMIN' || role === 'STAFF') ? hospitalName : undefined
+                    hospital_name: (role === 'ADMIN' || role === 'STAFF' || role === 'DOCTOR') ? hospitalName : undefined
                 })
             });
 

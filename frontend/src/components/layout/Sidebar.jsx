@@ -36,14 +36,18 @@ export default function Sidebar() {
     // Fetch all doctors at this hospital when user is DOCTOR
     useEffect(() => {
         if (user?.role === 'DOCTOR' && token) {
-            fetch('/api/hospital/doctors', {
+            // Use user's hospital_name from DB, or fall back to selectedHospital
+            const hospitalName = user.hospital_name || selectedHospital?.name || '';
+            if (!hospitalName) return;
+            const url = `/api/hospital/doctors${!user.hospital_name ? `?hospital_name=${encodeURIComponent(hospitalName)}` : ''}`;
+            fetch(url, {
                 headers: { 'Authorization': `Bearer ${token}` }
             })
                 .then(r => r.ok ? r.json() : [])
                 .then(data => setHospitalDoctors(Array.isArray(data) ? data : []))
                 .catch(() => setHospitalDoctors([]))
         }
-    }, [user, token])
+    }, [user, token, selectedHospital])
 
     const handleLogoClick = () => {
         const rolePrefix = user?.role?.toLowerCase() || 'user';
