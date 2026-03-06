@@ -3,6 +3,7 @@ import { NavLink, useLocation, useNavigate } from 'react-router-dom'
 import { ChevronLeft, ChevronRight, Plus } from 'lucide-react'
 import useStore from '../../store/useStore'
 import { formatTime, formatDate } from '../../utils/dateUtils'
+import Logo from './logo.png';
 
 const navItems = [
     { to: '/dashboard', label: 'Dashboard', end: true, requiresSelectedHospital: true },
@@ -54,19 +55,18 @@ export default function Sidebar() {
                 onClick={handleLogoClick}
             >
                 <div
-                    className="flex-shrink-0 flex items-center justify-center rounded-xl"
+                    className="flex-shrink-0 flex items-center justify-center rounded-xl overflow-hidden"
                     style={{
                         width: 36, height: 36,
-                        background: '#22c55e',
                         boxShadow: '0 0 16px rgba(34, 197, 94, 0.4)',
+                        background: '#22c55e',
                     }}
                 >
-                    <Plus size={20} color="white" strokeWidth={3} />
+                    <img src={Logo} alt="MediGuard Logo" className="w-full h-full object-cover" />
                 </div>
                 {!sidebarCollapsed && (
                     <div className="overflow-hidden">
                         <p className="font-bold text-sm text-gradient leading-tight tracking-wide">MediGuard</p>
-                        <p className="text-xs font-medium" style={{ color: 'var(--text-muted)' }}>AI Platform</p>
                     </div>
                 )}
             </div>
