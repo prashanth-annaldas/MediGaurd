@@ -13,9 +13,6 @@ import Login from './components/auth/Login'
 import Register from './components/auth/Register'
 import StressIndexView from './components/public/StressIndexView'
 import HospitalSearch from './components/public/HospitalSearch'
-import AdmitPatient from './components/staff/AdmitPatient'
-import DischargePatient from './components/staff/DischargePatient'
-import QRGenerator from './components/staff/QRGenerator'
 import Appointments from './components/staff/Appointments'
 import DoctorAppointments from './components/doctor/DoctorAppointments'
 import PatientRegistration from './components/staff/PatientRegistration'
@@ -85,9 +82,6 @@ export default function App() {
             <Route path="/admin/forecast" element={<ProtectedRoute allowedRoles={['ADMIN']}><HospitalRequiredRoute><ForecastDashboard /></HospitalRequiredRoute></ProtectedRoute>} />
             <Route path="/admin/trends" element={<ProtectedRoute allowedRoles={['ADMIN']}><HospitalRequiredRoute><TrendAnalytics /></HospitalRequiredRoute></ProtectedRoute>} />
             <Route path="/admin/gemini" element={<ProtectedRoute allowedRoles={['ADMIN']}><GeminiChat /></ProtectedRoute>} />
-            <Route path="/admin/admit" element={<ProtectedRoute allowedRoles={['ADMIN']}><AdmitPatient /></ProtectedRoute>} />
-            <Route path="/admin/discharge" element={<ProtectedRoute allowedRoles={['ADMIN']}><DischargePatient /></ProtectedRoute>} />
-            <Route path="/admin/qr-gen" element={<ProtectedRoute allowedRoles={['ADMIN']}><QRGenerator /></ProtectedRoute>} />
             <Route path="/admin/appointments" element={<ProtectedRoute allowedRoles={['ADMIN']}><Appointments /></ProtectedRoute>} />
             <Route path="/admin/beds" element={<ProtectedRoute allowedRoles={['ADMIN']}><BedManagement /></ProtectedRoute>} />
 
@@ -98,9 +92,6 @@ export default function App() {
             <Route path="/staff/forecast" element={<ProtectedRoute allowedRoles={['STAFF']}><HospitalRequiredRoute><ForecastDashboard /></HospitalRequiredRoute></ProtectedRoute>} />
             <Route path="/staff/trends" element={<ProtectedRoute allowedRoles={['STAFF']}><HospitalRequiredRoute><TrendAnalytics /></HospitalRequiredRoute></ProtectedRoute>} />
             <Route path="/staff/gemini" element={<ProtectedRoute allowedRoles={['STAFF']}><GeminiChat /></ProtectedRoute>} />
-            <Route path="/staff/admit" element={<ProtectedRoute allowedRoles={['STAFF']}><AdmitPatient /></ProtectedRoute>} />
-            <Route path="/staff/discharge" element={<ProtectedRoute allowedRoles={['STAFF']}><DischargePatient /></ProtectedRoute>} />
-            <Route path="/staff/qr-gen" element={<ProtectedRoute allowedRoles={['STAFF']}><QRGenerator /></ProtectedRoute>} />
             <Route path="/staff/appointments" element={<ProtectedRoute allowedRoles={['STAFF']}><Appointments /></ProtectedRoute>} />
             <Route path="/staff/beds" element={<ProtectedRoute allowedRoles={['STAFF']}><BedManagement /></ProtectedRoute>} />
 
