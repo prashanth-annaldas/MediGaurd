@@ -442,6 +442,184 @@ def discharge_patient(data: QRScanData, db: Session = Depends(get_db), current_u
     
     return {"message": "Patient discharged successfully", "available_beds": hospital.available_beds, "hospital": hospital_name}
 
+# ─── Bed Management ─────────────────────────────────────────────────────────
+
+@app.get("/api/beds")
+def get_beds(db: Session = Depends(get_db), current_user: models.User = Depends(auth.get_current_staff_user)):
+    """List all beds for the staff user's hospital."""
+    hospital_name = current_user.hospital_name
+    if not hospital_name:
+        raise HTTPException(status_code=400, detail="User not associated with a hospital")
+    beds = db.query(models.Bed).filter(models.Bed.hospital_name == hospital_name).order_by(models.Bed.bed_number).all()
+    return [
+        {
+            "id": b.id,
+            "bed_number": b.bed_number,
+            "bed_type": b.bed_type,
+            "is_occupied": b.is_occupied,
+            "patient_name": b.patient_name,
+            "patient_id": b.patient_id,
+            "admitted_at": b.admitted_at,
+            "qr_code": b.qr_code,
+            "hospital_name": b.hospital_name,
+        }
+        for b in beds
+    ]
+
+@app.get("/api/beds/qr/{qr_code}")
+def get_bed_by_qr(qr_code: str, db: Session = Depends(get_db)):
+    """Public endpoint: get bed details by QR code (used when scanning a bed QR)."""
+    bed = db.query(models.Bed).filter(models.Bed.qr_code == qr_code).first()
+    if not bed:
+        raise HTTPException(status_code=404, detail="Bed not found for this QR code")
+
+    patient = None
+    if bed.patient_id:
+        patient = db.query(models.Patient).filter(models.Patient.id == bed.patient_id).first()
+
+    return {
+        "id": bed.id,
+        "bed_number": bed.bed_number,
+        "bed_type": bed.bed_type,
+        "is_occupied": bed.is_occupied,
+        "patient_name": bed.patient_name,
+        "patient_id": bed.patient_id,
+        "admitted_at": bed.admitted_at,
+        "qr_code": bed.qr_code,
+        "hospital_name": bed.hospital_name,
+        "patient_details": {
+            "id": patient.id,
+            "full_name": patient.full_name,
+            "age": patient.age,
+            "gender": patient.gender,
+            "phone": patient.phone,
+            "blood_group": patient.blood_group,
+            "emergency_contact": patient.emergency_contact,
+            "medical_history": patient.medical_history,
+        } if patient else None,
+    }
+
+@app.post("/api/beds/seed")
+def seed_beds(db: Session = Depends(get_db), current_user: models.User = Depends(auth.get_current_staff_user)):
+    """Auto-generate bed records from the hospital's total_beds, icu_total, ventilators_total."""
+    hospital_name = current_user.hospital_name
+    if not hospital_name:
+        raise HTTPException(status_code=400, detail="User not associated with a hospital")
+
+    hospital = db.query(models.Hospital).filter(models.Hospital.name == hospital_name).first()
+    if not hospital:
+        raise HTTPException(status_code=404, detail="Hospital not found")
+
+    # Check if beds already exist
+    existing = db.query(models.Bed).filter(models.Bed.hospital_name == hospital_name).count()
+    if existing > 0:
+        raise HTTPException(status_code=400, detail=f"{existing} beds already exist for this hospital. Delete them first to re-seed.")
+
+    beds_to_create = []
+    import uuid
+
+    # General beds
+    for i in range(1, (hospital.total_beds or 0) + 1):
+        beds_to_create.append(models.Bed(
+            bed_number=f"B-{i:03d}",
+            bed_type="general",
+            hospital_name=hospital_name,
+            is_occupied=0,
+            qr_code=f"BED-{hospital_name.replace(' ', '_')}-B{i:03d}-{uuid.uuid4().hex[:8]}",
+        ))
+
+    # ICU beds
+    for i in range(1, (hospital.icu_total or 0) + 1):
+        beds_to_create.append(models.Bed(
+            bed_number=f"ICU-{i:03d}",
+            bed_type="icu",
+            hospital_name=hospital_name,
+            is_occupied=0,
+            qr_code=f"BED-{hospital_name.replace(' ', '_')}-ICU{i:03d}-{uuid.uuid4().hex[:8]}",
+        ))
+
+    # Ventilator beds
+    for i in range(1, (hospital.ventilators_total or 0) + 1):
+        beds_to_create.append(models.Bed(
+            bed_number=f"VENT-{i:03d}",
+            bed_type="ventilator",
+            hospital_name=hospital_name,
+            is_occupied=0,
+            qr_code=f"BED-{hospital_name.replace(' ', '_')}-VENT{i:03d}-{uuid.uuid4().hex[:8]}",
+        ))
+
+    db.add_all(beds_to_create)
+    db.commit()
+    return {"message": f"Seeded {len(beds_to_create)} beds", "count": len(beds_to_create)}
+
+class BedToggleRequest(BaseModel):
+    patient_name: Optional[str] = None
+    patient_id: Optional[int] = None
+
+@app.put("/api/beds/{bed_id}/toggle")
+def toggle_bed(bed_id: int, data: BedToggleRequest = BedToggleRequest(), db: Session = Depends(get_db), current_user: models.User = Depends(auth.get_current_staff_user)):
+    """Toggle bed occupied <-> vacant. If marking occupied, optionally assign a patient."""
+    bed = db.query(models.Bed).filter(models.Bed.id == bed_id).first()
+    if not bed:
+        raise HTTPException(status_code=404, detail="Bed not found")
+
+    hospital = db.query(models.Hospital).filter(models.Hospital.name == bed.hospital_name).first()
+
+    if bed.is_occupied:
+        # Discharge: mark vacant
+        bed.is_occupied = 0
+        bed.patient_name = None
+        bed.patient_id = None
+        bed.admitted_at = None
+        if hospital:
+            hospital.available_beds = min(hospital.total_beds, hospital.available_beds + 1)
+    else:
+        # Admit: mark occupied
+        bed.is_occupied = 1
+        bed.patient_name = data.patient_name
+        bed.patient_id = data.patient_id
+        bed.admitted_at = datetime.datetime.utcnow().isoformat() + "Z"
+        if hospital:
+            hospital.available_beds = max(0, hospital.available_beds - 1)
+
+    db.commit()
+    return {
+        "message": f"Bed {bed.bed_number} is now {'occupied' if bed.is_occupied else 'vacant'}",
+        "bed": {
+            "id": bed.id,
+            "bed_number": bed.bed_number,
+            "is_occupied": bed.is_occupied,
+            "patient_name": bed.patient_name,
+            "patient_id": bed.patient_id,
+            "admitted_at": bed.admitted_at,
+        }
+    }
+
+class BedAssignRequest(BaseModel):
+    patient_name: str
+    patient_id: Optional[int] = None
+
+@app.put("/api/beds/{bed_id}/assign")
+def assign_patient_to_bed(bed_id: int, data: BedAssignRequest, db: Session = Depends(get_db), current_user: models.User = Depends(auth.get_current_staff_user)):
+    """Assign a specific patient to a bed (marks it occupied)."""
+    bed = db.query(models.Bed).filter(models.Bed.id == bed_id).first()
+    if not bed:
+        raise HTTPException(status_code=404, detail="Bed not found")
+
+    hospital = db.query(models.Hospital).filter(models.Hospital.name == bed.hospital_name).first()
+
+    if not bed.is_occupied and hospital:
+        hospital.available_beds = max(0, hospital.available_beds - 1)
+
+    bed.is_occupied = 1
+    bed.patient_name = data.patient_name
+    bed.patient_id = data.patient_id
+    bed.admitted_at = datetime.datetime.utcnow().isoformat() + "Z"
+
+    db.commit()
+    return {"message": f"Patient '{data.patient_name}' assigned to bed {bed.bed_number}"}
+
+
 @app.get("/api/stress-index")
 def get_stress_index():
     """Calculate dynamic stress index for web connectivity view."""

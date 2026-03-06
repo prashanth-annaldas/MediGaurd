@@ -136,3 +136,17 @@ class Patient(Base):
     emergency_contact = Column(String)
     medical_history = Column(String, nullable=True)
     created_at = Column(String)
+
+class Bed(Base):
+    __tablename__ = "beds"
+
+    id = Column(Integer, primary_key=True, index=True)
+    bed_number = Column(String, index=True)           # e.g. "B-001", "ICU-003"
+    bed_type = Column(String, default="general")       # "general", "icu", "ventilator"
+    hospital_name = Column(String, index=True)
+    is_occupied = Column(Integer, default=0)            # 0 = vacant, 1 = occupied
+    patient_name = Column(String, nullable=True)
+    patient_id = Column(Integer, ForeignKey("patients.id"), nullable=True)
+    admitted_at = Column(String, nullable=True)         # ISO timestamp
+    qr_code = Column(String, unique=True, index=True)  # Unique QR identifier
+

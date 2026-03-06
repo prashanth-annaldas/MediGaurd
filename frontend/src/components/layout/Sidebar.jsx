@@ -17,6 +17,7 @@ const navItems = [
     { to: '/admit', label: 'Admit Patient', staffOnly: true },
     { to: '/discharge', label: 'Discharge Patient', staffOnly: true },
     { to: '/qr-gen', label: 'QR Generator', staffOnly: true },
+    { to: '/beds', label: 'Bed Management', staffOnly: true },
     { to: '/patients', label: 'Register Patient', userOnly: true, alwaysShowForUser: true },
     { to: '/appointments', label: 'Appointments', userOnly: true, alwaysShowForUser: true },
     { to: '/appointments', label: 'Prescriptions', doctorOnly: true },

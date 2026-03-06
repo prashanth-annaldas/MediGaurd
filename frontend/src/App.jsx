@@ -22,6 +22,8 @@ import PatientRegistration from './components/staff/PatientRegistration'
 import DoctorPrescription from './components/doctor/DoctorPrescription'
 import UserAppointments from './components/user/UserAppointments'
 import UserPrescriptionView from './components/user/UserPrescriptionView'
+import BedManagement from './components/staff/BedManagement'
+import BedDetail from './components/public/BedDetail'
 import useStore from './store/useStore'
 
 const ProtectedRoute = ({ children, allowedRoles }) => {
@@ -70,6 +72,7 @@ export default function App() {
             <Route path="/login" element={<Login />} />
             <Route path="/register" element={<Register />} />
             <Route path="/public/stress-index" element={<StressIndexView />} />
+            <Route path="/bed/:qrCode" element={<BedDetail />} />
 
             <Route path="/" element={<RootRedirect />} />
 
@@ -86,6 +89,7 @@ export default function App() {
             <Route path="/admin/discharge" element={<ProtectedRoute allowedRoles={['ADMIN']}><DischargePatient /></ProtectedRoute>} />
             <Route path="/admin/qr-gen" element={<ProtectedRoute allowedRoles={['ADMIN']}><QRGenerator /></ProtectedRoute>} />
             <Route path="/admin/appointments" element={<ProtectedRoute allowedRoles={['ADMIN']}><Appointments /></ProtectedRoute>} />
+            <Route path="/admin/beds" element={<ProtectedRoute allowedRoles={['ADMIN']}><BedManagement /></ProtectedRoute>} />
 
             {/* Staff Routes */}
             <Route path="/staff/dashboard" element={<ProtectedRoute allowedRoles={['STAFF']}><HospitalRequiredRoute><SmartDashboard /></HospitalRequiredRoute></ProtectedRoute>} />
@@ -98,6 +102,7 @@ export default function App() {
             <Route path="/staff/discharge" element={<ProtectedRoute allowedRoles={['STAFF']}><DischargePatient /></ProtectedRoute>} />
             <Route path="/staff/qr-gen" element={<ProtectedRoute allowedRoles={['STAFF']}><QRGenerator /></ProtectedRoute>} />
             <Route path="/staff/appointments" element={<ProtectedRoute allowedRoles={['STAFF']}><Appointments /></ProtectedRoute>} />
+            <Route path="/staff/beds" element={<ProtectedRoute allowedRoles={['STAFF']}><BedManagement /></ProtectedRoute>} />
 
             {/* Doctor Routes */}
             <Route path="/doctor/dashboard" element={<ProtectedRoute allowedRoles={['DOCTOR']}><HospitalRequiredRoute><SmartDashboard /></HospitalRequiredRoute></ProtectedRoute>} />

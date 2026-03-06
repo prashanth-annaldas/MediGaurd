@@ -1,4 +1,5 @@
 import React, { useState } from 'react';
+import { useNavigate } from 'react-router-dom';
 import QRScanner from '../ui/QRScanner';
 import Layout from '../layout/Layout';
 import useStore from '../../store/useStore';
@@ -8,9 +9,17 @@ export default function AdmitPatient() {
     const [status, setStatus] = useState('idle'); // 'idle', 'scanning', 'processing', 'success', 'error'
     const [message, setMessage] = useState('');
     const { token, refreshData } = useStore();
+    const navigate = useNavigate();
 
     const handleScanSuccess = async (decodedText) => {
         if (status === 'processing') return;
+
+        // Check if the scanned QR is a bed QR URL — redirect to patient info
+        const bedMatch = decodedText.match(/\/bed\/(.+)$/);
+        if (bedMatch) {
+            navigate(`/bed/${bedMatch[1]}`);
+            return;
+        }
 
         setStatus('processing');
         try {
