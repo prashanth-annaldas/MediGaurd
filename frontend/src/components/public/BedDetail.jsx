@@ -1,6 +1,6 @@
-import React, { useState, useEffect } from 'react'
+import React, { useState, useEffect, useCallback } from 'react'
 import { useParams, Link } from 'react-router-dom'
-import { Loader2, BedDouble, User, Phone, Heart, AlertCircle } from 'lucide-react'
+import { Loader2, BedDouble, User, Phone, Heart, AlertCircle, LogIn, LogOut } from 'lucide-react'
 
 const API = import.meta.env.VITE_API_URL || 'https://medigaurd1-fzd9.onrender.com'
 
@@ -9,21 +9,50 @@ export default function BedDetail() {
     const [bed, setBed] = useState(null)
     const [loading, setLoading] = useState(true)
     const [error, setError] = useState(null)
+    const [toggling, setToggling] = useState(false)
+    const [actionMsg, setActionMsg] = useState(null)
 
-    useEffect(() => {
-        const fetchBed = async () => {
-            try {
-                const res = await fetch(`${API}/api/beds/qr/${qrCode}`)
-                if (!res.ok) throw new Error('Bed not found')
-                const data = await res.json()
-                setBed(data)
-            } catch (e) {
-                setError(e.message)
-            }
-            setLoading(false)
+    const fetchBed = useCallback(async () => {
+        try {
+            const res = await fetch(`${API}/api/beds/qr/${qrCode}`)
+            if (!res.ok) throw new Error('Bed not found')
+            const data = await res.json()
+            setBed(data)
+            setError(null)
+        } catch (e) {
+            setError(e.message)
         }
-        fetchBed()
+        setLoading(false)
     }, [qrCode])
+
+    useEffect(() => { fetchBed() }, [fetchBed])
+
+    const handleToggle = async () => {
+        const token = localStorage.getItem('token')
+        if (!token) {
+            setActionMsg('⚠️ Please log in as staff to perform this action.')
+            return
+        }
+        setToggling(true)
+        setActionMsg(null)
+        try {
+            const res = await fetch(`${API}/api/beds/${bed.id}/toggle`, {
+                method: 'PUT',
+                headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${token}` },
+                body: JSON.stringify({}),
+            })
+            if (!res.ok) {
+                const errData = await res.json().catch(() => ({}))
+                throw new Error(errData.detail || 'Action failed')
+            }
+            const result = await res.json()
+            setActionMsg(`✅ ${result.message}`)
+            await fetchBed() // refresh bed data
+        } catch (e) {
+            setActionMsg(`❌ ${e.message}`)
+        }
+        setToggling(false)
+    }
 
     if (loading) {
         return (
@@ -126,6 +155,57 @@ export default function BedDetail() {
                         </p>
                     </div>
                 )}
+
+                {/* Admit / Discharge Button */}
+                <div className="text-center space-y-3">
+                    <button
+                        onClick={handleToggle}
+                        disabled={toggling}
+                        style={{
+                            display: 'inline-flex',
+                            alignItems: 'center',
+                            gap: 8,
+                            padding: '12px 32px',
+                            borderRadius: 12,
+                            border: 'none',
+                            cursor: toggling ? 'wait' : 'pointer',
+                            fontSize: 15,
+                            fontWeight: 600,
+                            color: '#fff',
+                            background: bed.is_occupied
+                                ? 'linear-gradient(135deg, #ef4444, #dc2626)'
+                                : 'linear-gradient(135deg, #22c55e, #16a34a)',
+                            boxShadow: bed.is_occupied
+                                ? '0 4px 14px rgba(239,68,68,0.35)'
+                                : '0 4px 14px rgba(34,197,94,0.35)',
+                            opacity: toggling ? 0.7 : 1,
+                            transition: 'all 0.2s ease',
+                        }}
+                    >
+                        {toggling ? (
+                            <Loader2 className="animate-spin" size={18} />
+                        ) : bed.is_occupied ? (
+                            <LogOut size={18} />
+                        ) : (
+                            <LogIn size={18} />
+                        )}
+                        {toggling
+                            ? 'Processing…'
+                            : bed.is_occupied
+                                ? 'Discharge Patient'
+                                : 'Admit Patient'}
+                    </button>
+
+                    {actionMsg && (
+                        <p className="text-sm" style={{
+                            color: actionMsg.startsWith('✅') ? '#22c55e'
+                                : actionMsg.startsWith('❌') ? '#ef4444'
+                                    : '#f59e0b'
+                        }}>
+                            {actionMsg}
+                        </p>
+                    )}
+                </div>
             </div>
         </div>
     )
