@@ -872,17 +872,67 @@ Interaction Style:
 - Start technical responses with the most urgent action first.
 - If asked about a domain not in the current data, advise based on standard emergency protocols while noting the data limitation."""
 
+USER_SYSTEM_CONTEXT = """You are MedGuard Medicine Assistant, a strict and structured medical information assistant.
+You ONLY provide information about medicines, drugs, and pharmaceutical topics.
+
+Your capabilities (STRICTLY limited to):
+1. Medicine Information: Name, generic name, brand names, drug class.
+2. Usage & Dosage: What a medicine is used for, recommended dosages, how to take it (before/after food, timing).
+3. Side Effects: Common side effects, serious side effects, when to seek medical attention.
+4. Drug Interactions: Which medicines should NOT be taken together, food-drug interactions.
+5. Precautions & Warnings: Who should avoid a medicine, pregnancy/breastfeeding safety, age restrictions.
+6. Storage: How to store medicines properly.
+
+STRICT RULES:
+- You must NEVER provide hospital management, resource allocation, staffing, or administrative advice.
+- You must NEVER diagnose diseases or suggest treatments. Always recommend consulting a doctor.
+- If asked about anything unrelated to medicines (e.g., hospital resources, weather, coding, general knowledge), politely decline and say: "I can only help with medicine-related questions. Please ask me about medicine names, usage, dosages, side effects, or drug interactions."
+- Always add a disclaimer: "This information is for educational purposes only. Always consult your doctor or pharmacist before taking any medication."
+- Keep responses structured with clear headings (Usage, Dosage, Side Effects, Precautions).
+- Be concise but thorough — use bullet points for clarity.
+
+Interaction Style:
+- Be warm, professional, and patient-friendly.
+- Use simple language that non-medical users can understand.
+- For greetings, respond warmly and ask what medicine they'd like to know about.
+- Always prioritize safety — if unsure, recommend consulting a healthcare professional."""
+
 @app.post("/api/gemini/chat")
 async def gemini_chat(req: ChatRequest):
     """Proxy chat to Gemini with hospital context injected."""
+    # Determine role from context
+    ctx = req.context or {}
+    user_role = ctx.get("role", "ADMIN")
+    is_user_mode = user_role in ["USER", "DOCTOR"] or ctx.get("mode") == "medicine_assistant"
+
     if not GEMINI_AVAILABLE or gemini_model is None:
         lowered = req.message.lower().strip()
         if lowered in ["hi", "hello", "hey", "hi there"]:
+            if is_user_mode:
+                return {
+                    "response": "💊 Hello! I'm MedGuard Medicine Assistant, currently running in **Demo Mode**. I can help you with information about medicines — their uses, dosages, side effects, and interactions. What medicine would you like to know about?",
+                    "model": "demo_mode"
+                }
             return {
                 "response": "👋 Hello! I'm MedGuard AI, currently running in **Demo Mode** because no valid API key was detected in the backend. I can provide simulated advice, but to see real analysis of your hospital data, please configure a `GEMINI_API_KEY` in `backend/.env`. How can I help you today?",
                 "model": "demo_mode"
             }
         
+        if is_user_mode:
+            return {
+                "response": (
+                    "⚠️ Medicine Assistant is currently in Demo Mode. To enable full AI capabilities, "
+                    "please ensure a valid GEMINI_API_KEY is configured in your backend/.env file.\n\n"
+                    "**Demo Response:** Here's general guidance:\n"
+                    "• Always read the medicine label for dosage and frequency\n"
+                    "• Take medicines at the same time each day for best results\n"
+                    "• Never stop prescribed medicines without consulting your doctor\n"
+                    "• Report any unusual side effects to your healthcare provider immediately\n\n"
+                    "_This information is for educational purposes only. Always consult your doctor._"
+                ),
+                "model": "demo_mode"
+            }
+
         return {
             "response": (
                 "⚠️ Gemini AI is currently in Demo Mode. To enable full AI capabilities, "
@@ -896,10 +946,12 @@ async def gemini_chat(req: ChatRequest):
             "model": "demo_mode"
         }
 
-    ctx = req.context or {}
     context_str = ""
-    if ctx:
+    if ctx and not is_user_mode:
         context_str = f"Current Hospital Resource Status for Context:\n{json.dumps(ctx, indent=2)}"
+
+    # Choose the correct system prompt based on role
+    system_prompt = USER_SYSTEM_CONTEXT if is_user_mode else SYSTEM_CONTEXT
 
     try:
         if gemini_model is None:
@@ -914,7 +966,7 @@ async def gemini_chat(req: ChatRequest):
                 contents.append({"role": role, "parts": [entry["content"]]})
         
         # Inject system context into the latest message
-        full_prompt = f"{SYSTEM_CONTEXT}\n\n{context_str}\n\nUser Message: {req.message}"
+        full_prompt = f"{system_prompt}\n\n{context_str}\n\nUser Message: {req.message}"
         contents.append({"role": "user", "parts": [full_prompt]})
         
         # We use generate_content with the full history array instead of start_chat
