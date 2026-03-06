@@ -27,9 +27,7 @@ export function useAutoRefresh(callback, intervalMs = 30000) {
 
     useEffect(() => {
         doRefresh()
-        const id = setInterval(doRefresh, intervalMs)
-        return () => clearInterval(id)
-    }, [doRefresh, intervalMs])
+    }, [doRefresh])
 
     return { lastRefreshed, isRefreshing, forceRefresh: doRefresh }
 }

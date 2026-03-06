@@ -1,8 +1,7 @@
-import React from 'react'
+import React, { useRef } from 'react'
 import { Shield, CheckCircle, Lock, Eye, Database, AlertTriangle, Server, Cpu } from 'lucide-react'
 import Layout from '../layout/Layout'
 import useStore from '../../store/useStore'
-import { useClock } from '../../hooks/useClock'
 import { formatTime, formatDate } from '../../utils/dateUtils'
 
 const COMPLIANCE_ITEMS = [
@@ -34,7 +33,7 @@ const PATENT_FEATURES = [
 
 export default function AdminPanel() {
     const resources = useStore(s => s.resources)
-    const now = useClock()
+    const now = useRef(new Date()).current
 
     const compliantCount = COMPLIANCE_ITEMS.filter(i => i.ok).length
 

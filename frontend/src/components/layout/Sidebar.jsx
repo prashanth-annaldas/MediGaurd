@@ -1,4 +1,4 @@
-import React from 'react'
+import React, { useRef } from 'react'
 import { NavLink, useLocation, useNavigate } from 'react-router-dom'
 import {
     LayoutDashboard, Activity, Bell, TrendingUp,
@@ -6,7 +6,6 @@ import {
     Shield, Plus, Users, MapPin, UserPlus, UserMinus, QrCode, CalendarDays, ClipboardList
 } from 'lucide-react'
 import useStore from '../../store/useStore'
-import { useClock } from '../../hooks/useClock'
 import { formatTime, formatDate } from '../../utils/dateUtils'
 
 const navItems = [
@@ -29,7 +28,7 @@ const navItems = [
 
 export default function Sidebar() {
     const { sidebarCollapsed, toggleSidebar, unreadAlertCount, user, selectedHospital, clearSelectedHospital } = useStore()
-    const now = useClock()
+    const now = useRef(new Date()).current
     const navigate = useNavigate()
 
     const handleLogoClick = () => {
@@ -77,11 +76,12 @@ export default function Sidebar() {
 
             {/* Nav */}
             <nav className="flex-1 px-2 space-y-1 overflow-y-auto overflow-x-hidden py-2">
-                {navItems.map(({ to, icon: Icon, label, end, adminOnly, userOnly, staffOnly, requiresSelectedHospital, alwaysShowForUser }) => {
+                {navItems.map(({ to, icon: Icon, label, end, adminOnly, userOnly, staffOnly, doctorOnly, requiresSelectedHospital, alwaysShowForUser }, idx) => {
                     const rolePrefix = user?.role?.toLowerCase() || 'user';
 
                     if (adminOnly && user?.role !== 'ADMIN') return null;
                     if (userOnly && (user?.role === 'ADMIN' || user?.role === 'STAFF')) return null;
+                    if (doctorOnly && user?.role !== 'DOCTOR') return null;
                     if (requiresSelectedHospital && !selectedHospital && user?.role !== 'ADMIN' && user?.role !== 'STAFF') return null;
 
                     // Staff features (Admit/Discharge/QR Gen/Appointments) should be visible to Staff and Admins
@@ -116,7 +116,7 @@ export default function Sidebar() {
 
                     return (
                         <NavLink
-                            key={to}
+                            key={`${to}-${idx}`}
                             to={finalTo}
                             end={end}
                             className={({ isActive }) =>

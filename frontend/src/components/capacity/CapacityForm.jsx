@@ -3,7 +3,8 @@ import { Activity, Beaker, BedDouble, Save, Loader2, CheckCircle } from 'lucide-
 import useStore from '../../store/useStore';
 
 export default function CapacityForm() {
-    const { addToast, addAlert, refreshData, resources, token } = useStore();
+    const { addToast, addAlert, refreshData, resources, token, user } = useStore();
+    const isAdmin = user?.role === 'ADMIN';
     const [loading, setLoading] = useState(false);
     const [success, setSuccess] = useState(false);
     const [hasInitialized, setHasInitialized] = useState(false);
@@ -135,14 +136,15 @@ export default function CapacityForm() {
                         </div>
 
                         <div className="space-y-2">
-                            <label className="text-xs font-medium text-[var(--text-muted)]">Total Capacity</label>
+                            <label className="text-xs font-medium text-[var(--text-muted)]">Total Capacity {!isAdmin && <span className="text-xs text-[var(--text-muted)] opacity-60">(Admin only)</span>}</label>
                             <input
                                 type="number"
                                 name="beds_capacity"
                                 value={formData.beds_capacity}
                                 onChange={handleChange}
                                 min="0"
-                                className="w-full bg-[var(--bg-card)] border border-navy-700 text-[var(--text-primary)] px-3 py-2 rounded-lg focus:outline-none focus:ring-2 focus:ring-teal-500/50 transition-all font-mono"
+                                disabled={!isAdmin}
+                                className={`w-full bg-[var(--bg-card)] border border-navy-700 text-[var(--text-primary)] px-3 py-2 rounded-lg focus:outline-none focus:ring-2 focus:ring-teal-500/50 transition-all font-mono ${!isAdmin ? 'opacity-50 cursor-not-allowed' : ''}`}
                                 required
                             />
                         </div>
@@ -172,14 +174,15 @@ export default function CapacityForm() {
                         </div>
 
                         <div className="space-y-2">
-                            <label className="text-xs font-medium text-[var(--text-muted)]">Total Capacity</label>
+                            <label className="text-xs font-medium text-[var(--text-muted)]">Total Capacity {!isAdmin && <span className="text-xs text-[var(--text-muted)] opacity-60">(Admin only)</span>}</label>
                             <input
                                 type="number"
                                 name="icu_capacity"
                                 value={formData.icu_capacity}
                                 onChange={handleChange}
                                 min="0"
-                                className="w-full bg-[var(--bg-card)] border border-navy-700 text-[var(--text-primary)] px-3 py-2 rounded-lg focus:outline-none focus:ring-2 focus:ring-alert-warning/50 transition-all font-mono"
+                                disabled={!isAdmin}
+                                className={`w-full bg-[var(--bg-card)] border border-navy-700 text-[var(--text-primary)] px-3 py-2 rounded-lg focus:outline-none focus:ring-2 focus:ring-alert-warning/50 transition-all font-mono ${!isAdmin ? 'opacity-50 cursor-not-allowed' : ''}`}
                                 required
                             />
                         </div>
@@ -209,14 +212,15 @@ export default function CapacityForm() {
                         </div>
 
                         <div className="space-y-2">
-                            <label className="text-xs font-medium text-[var(--text-muted)]">Total Capacity</label>
+                            <label className="text-xs font-medium text-[var(--text-muted)]">Total Capacity {!isAdmin && <span className="text-xs text-[var(--text-muted)] opacity-60">(Admin only)</span>}</label>
                             <input
                                 type="number"
                                 name="ventilators_capacity"
                                 value={formData.ventilators_capacity}
                                 onChange={handleChange}
                                 min="0"
-                                className="w-full bg-[var(--bg-card)] border border-navy-700 text-[var(--text-primary)] px-3 py-2 rounded-lg focus:outline-none focus:ring-2 focus:ring-alert-info/50 transition-all font-mono"
+                                disabled={!isAdmin}
+                                className={`w-full bg-[var(--bg-card)] border border-navy-700 text-[var(--text-primary)] px-3 py-2 rounded-lg focus:outline-none focus:ring-2 focus:ring-alert-info/50 transition-all font-mono ${!isAdmin ? 'opacity-50 cursor-not-allowed' : ''}`}
                                 required
                             />
                         </div>
