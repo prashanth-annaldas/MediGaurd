@@ -1,29 +1,25 @@
 import React, { useRef } from 'react'
 import { NavLink, useLocation, useNavigate } from 'react-router-dom'
-import {
-    LayoutDashboard, Activity, Bell, TrendingUp,
-    Brain, Settings, ChevronLeft, ChevronRight,
-    Shield, Plus, Users, MapPin, UserPlus, UserMinus, QrCode, CalendarDays, ClipboardList
-} from 'lucide-react'
+import { ChevronLeft, ChevronRight, Plus } from 'lucide-react'
 import useStore from '../../store/useStore'
 import { formatTime, formatDate } from '../../utils/dateUtils'
 
 const navItems = [
-    { to: '/dashboard', icon: LayoutDashboard, label: 'Dashboard', end: true, requiresSelectedHospital: true },
-    { to: '/resources', icon: Activity, label: 'Resources', requiresSelectedHospital: true },
-    { to: '/alerts', icon: Bell, label: 'Alert Center', requiresSelectedHospital: true },
-    { to: '/forecast', icon: TrendingUp, label: 'AI Forecast', requiresSelectedHospital: true },
-    { to: '/trends', icon: TrendingUp, label: 'Trends', requiresSelectedHospital: true },
-    { to: '/gemini', icon: Brain, label: 'Gemini AI', alwaysShowForUser: true },
-    { to: '/hospitals', icon: MapPin, label: 'Hospital Search', userOnly: true, alwaysShowForUser: true },
-    { to: '/admin', icon: Shield, label: 'Admin', adminOnly: true },
-    { to: '/appointments', icon: CalendarDays, label: 'Appointments', staffOnly: true },
-    { to: '/admit', icon: UserPlus, label: 'Admit Patient', staffOnly: true },
-    { to: '/discharge', icon: UserMinus, label: 'Discharge Patient', staffOnly: true },
-    { to: '/qr-gen', icon: QrCode, label: 'QR Generator', staffOnly: true },
-    { to: '/patients', icon: ClipboardList, label: 'Register Patient', userOnly: true, alwaysShowForUser: true },
-    { to: '/appointments', icon: CalendarDays, label: 'Appointments', userOnly: true, alwaysShowForUser: true },
-    { to: '/appointments', icon: ClipboardList, label: 'Prescriptions', doctorOnly: true },
+    { to: '/dashboard', label: 'Dashboard', end: true, requiresSelectedHospital: true },
+    { to: '/resources', label: 'Resources', requiresSelectedHospital: true },
+    { to: '/alerts', label: 'Alert Center', requiresSelectedHospital: true },
+    { to: '/forecast', label: 'AI Forecast', requiresSelectedHospital: true },
+    { to: '/trends', label: 'Trends', requiresSelectedHospital: true },
+    { to: '/gemini', label: 'Gemini AI', alwaysShowForUser: true },
+    { to: '/hospitals', label: 'Hospital Search', userOnly: true, alwaysShowForUser: true },
+    { to: '/admin', label: 'Admin', adminOnly: true },
+    { to: '/appointments', label: 'Appointments', staffOnly: true },
+    { to: '/admit', label: 'Admit Patient', staffOnly: true },
+    { to: '/discharge', label: 'Discharge Patient', staffOnly: true },
+    { to: '/qr-gen', label: 'QR Generator', staffOnly: true },
+    { to: '/patients', label: 'Register Patient', userOnly: true, alwaysShowForUser: true },
+    { to: '/appointments', label: 'Appointments', userOnly: true, alwaysShowForUser: true },
+    { to: '/appointments', label: 'Prescriptions', doctorOnly: true },
 ]
 
 export default function Sidebar() {
@@ -76,7 +72,7 @@ export default function Sidebar() {
 
             {/* Nav */}
             <nav className="flex-1 px-2 space-y-1 overflow-y-auto overflow-x-hidden py-2">
-                {navItems.map(({ to, icon: Icon, label, end, adminOnly, userOnly, staffOnly, doctorOnly, requiresSelectedHospital, alwaysShowForUser }, idx) => {
+                {navItems.map(({ to, label, end, adminOnly, userOnly, staffOnly, doctorOnly, requiresSelectedHospital, alwaysShowForUser }, idx) => {
                     const rolePrefix = user?.role?.toLowerCase() || 'user';
 
                     if (adminOnly && user?.role !== 'ADMIN') return null;
@@ -126,8 +122,7 @@ export default function Sidebar() {
                             style={{ justifyContent: sidebarCollapsed ? 'center' : 'flex-start' }}
                         >
                             <div className="flex items-center gap-3">
-                                <Icon size={18} className="flex-shrink-0" />
-                                {!sidebarCollapsed && <span>{label}</span>}
+                                {!sidebarCollapsed ? <span>{label}</span> : <span className="text-xs font-bold">{label.charAt(0)}</span>}
                             </div>
                             {label === 'Alert Center' && !sidebarCollapsed && unreadAlertCount > 0 && (
                                 <span
