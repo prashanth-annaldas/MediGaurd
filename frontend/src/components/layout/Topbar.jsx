@@ -58,17 +58,6 @@ export default function Topbar({ title = 'Dashboard' }) {
 
             {/* Right: status + controls */}
             <div className="flex items-center gap-3">
-                {/* Live indicator */}
-                <div className="flex items-center gap-2 px-3 py-1.5 rounded-lg" style={{ background: 'rgba(16, 185, 129, 0.1)', border: '1px solid rgba(16, 185, 129, 0.2)' }}>
-                    <span className="w-2 h-2 rounded-full pulse-ring" style={{ background: '#10b981' }} />
-                    <span className="text-xs font-medium" style={{ color: '#10b981' }}>LIVE</span>
-                    <Wifi size={12} style={{ color: '#10b981' }} />
-                </div>
-
-                {/* Last refresh */}
-                <span className="text-xs ticker hidden md:block" style={{ color: 'var(--text-muted)' }}>
-                    Updated {timeStr}
-                </span>
 
                 {/* Refresh */}
                 <button

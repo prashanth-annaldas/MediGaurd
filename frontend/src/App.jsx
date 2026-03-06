@@ -111,11 +111,11 @@ export default function App() {
 
             {/* User Routes */}
             <Route path="/user/hospitals" element={<ProtectedRoute allowedRoles={['USER']}><HospitalSearch /></ProtectedRoute>} />
-            <Route path="/user/dashboard" element={<ProtectedRoute allowedRoles={['USER']}><HospitalRequiredRoute><SmartDashboard /></HospitalRequiredRoute></ProtectedRoute>} />
-            <Route path="/user/resources" element={<ProtectedRoute allowedRoles={['USER']}><HospitalRequiredRoute><ResourcesPage /></HospitalRequiredRoute></ProtectedRoute>} />
-            <Route path="/user/alerts" element={<ProtectedRoute allowedRoles={['USER']}><HospitalRequiredRoute><AlertCenter /></HospitalRequiredRoute></ProtectedRoute>} />
-            <Route path="/user/forecast" element={<ProtectedRoute allowedRoles={['USER']}><HospitalRequiredRoute><ForecastDashboard /></HospitalRequiredRoute></ProtectedRoute>} />
-            <Route path="/user/trends" element={<ProtectedRoute allowedRoles={['USER']}><HospitalRequiredRoute><TrendAnalytics /></HospitalRequiredRoute></ProtectedRoute>} />
+            <Route path="/user/dashboard" element={<ProtectedRoute allowedRoles={['ADMIN', 'STAFF']}><HospitalRequiredRoute><SmartDashboard /></HospitalRequiredRoute></ProtectedRoute>} />
+            <Route path="/user/resources" element={<ProtectedRoute allowedRoles={['ADMIN', 'STAFF']}><HospitalRequiredRoute><ResourcesPage /></HospitalRequiredRoute></ProtectedRoute>} />
+            <Route path="/user/alerts" element={<ProtectedRoute allowedRoles={['ADMIN', 'STAFF']}><HospitalRequiredRoute><AlertCenter /></HospitalRequiredRoute></ProtectedRoute>} />
+            <Route path="/user/forecast" element={<ProtectedRoute allowedRoles={['ADMIN', 'STAFF']}><HospitalRequiredRoute><ForecastDashboard /></HospitalRequiredRoute></ProtectedRoute>} />
+            <Route path="/user/trends" element={<ProtectedRoute allowedRoles={['ADMIN', 'STAFF']}><HospitalRequiredRoute><TrendAnalytics /></HospitalRequiredRoute></ProtectedRoute>} />
             <Route path="/user/gemini" element={<ProtectedRoute allowedRoles={['USER']}><GeminiChat /></ProtectedRoute>} />
             <Route path="/user/patients" element={<ProtectedRoute allowedRoles={['USER']}><PatientRegistration /></ProtectedRoute>} />
             <Route path="/user/appointments" element={<ProtectedRoute allowedRoles={['USER']}><UserAppointments /></ProtectedRoute>} />

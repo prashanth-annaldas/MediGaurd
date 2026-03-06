@@ -207,12 +207,14 @@ const HospitalSearch = () => {
                                         </div>
 
                                         <div className="flex flex-col gap-3 mt-auto">
-                                            <button
-                                                onClick={() => handleAnalysis(hospital)}
-                                                className="w-full bg-[#1da1f2] hover:bg-[#1a90d9] text-white font-semibold py-2.5 px-4 rounded-md transition-colors text-sm"
-                                            >
-                                                Hospital analysis
-                                            </button>
+                                            {user?.role !== 'USER' && (
+                                                <button
+                                                    onClick={() => handleAnalysis(hospital)}
+                                                    className="w-full bg-[#1da1f2] hover:bg-[#1a90d9] text-white font-semibold py-2.5 px-4 rounded-md transition-colors text-sm"
+                                                >
+                                                    Hospital analysis
+                                                </button>
+                                            )}
                                             <button
                                                 onClick={() => setBookingHospital(hospital)}
                                                 className="w-full bg-blue-600 hover:bg-blue-700 text-white font-semibold py-2.5 px-4 rounded-md transition-colors text-sm flex items-center justify-center gap-2"

@@ -97,8 +97,8 @@ export default function Sidebar() {
                         if (user?.role === 'DOCTOR') return null;
 
                         // For normal users (not ADMIN, not STAFF, not DOCTOR)
-                        // Show if alwaysShowForUser OR if it requiresSelectedHospital and we have a selectedHospital
-                        if (!alwaysShowForUser && !(requiresSelectedHospital && selectedHospital)) return null;
+                        // Show ONLY if alwaysShowForUser (hide analysis-related links even if selectedHospital exists)
+                        if (!alwaysShowForUser) return null;
                     }
 
                     // Construct the final URL with role prefix
