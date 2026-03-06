@@ -19,6 +19,7 @@ from database import engine, Base, get_db
 import models
 import auth
 import ml_model
+import email_util
 
 load_dotenv()
 
@@ -1396,6 +1397,21 @@ def create_appointment(data: AppointmentCreate, db: Session = Depends(get_db), c
     db.add(new_app)
     db.commit()
     db.refresh(new_app)
+
+    # Send confirmation email to the patient
+    try:
+        email_util.send_appointment_email(
+            receiver_email=current_user.email,
+            patient_name=current_user.name,
+            hospital_name=data.hospital_name,
+            specialization=data.specialization,
+            doctor_name=data.doctor_name,
+            date=data.date,
+            time=data.time,
+        )
+    except Exception as e:
+        print(f"Email notification failed (non-blocking): {e}")
+
     return new_app
 
 @app.get("/api/appointments", response_model=List[AppointmentResponse])
