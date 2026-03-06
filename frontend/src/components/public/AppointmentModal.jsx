@@ -10,6 +10,7 @@ export default function AppointmentModal({ hospital, onClose }) {
     const [extractedData, setExtractedData] = useState(null);
     const [booking, setBooking] = useState(false);
     const [error, setError] = useState(null);
+    const [selectedDoctor, setSelectedDoctor] = useState('');
     const token = useStore(state => state.token);
 
     const formatTime12h = (time24) => {
@@ -33,6 +34,16 @@ export default function AppointmentModal({ hospital, onClose }) {
             });
             if (!res.ok) throw new Error('Failed to parse message');
             const data = await res.json();
+
+            // Override with manually selected doctor if present
+            if (selectedDoctor) {
+                const docObj = hospital.doctors?.find(d => d.name === selectedDoctor);
+                if (docObj) {
+                    data.doctor_name = docObj.name;
+                    data.specialization = docObj.specialty;
+                }
+            }
+
             setExtractedData(data);
             setStep(2);
         } catch (err) {
@@ -95,6 +106,24 @@ export default function AppointmentModal({ hospital, onClose }) {
 
                     {step === 1 && (
                         <div className="space-y-6">
+                            <div className="bg-white border border-gray-100 rounded-2xl p-4 shadow-sm">
+                                <label className="text-xs font-bold text-gray-500 uppercase tracking-wider block mb-2">
+                                    Select a Doctor (Optional)
+                                </label>
+                                <select
+                                    className="w-full bg-gray-50 border border-gray-200 text-gray-800 text-sm rounded-xl focus:ring-blue-500 focus:border-blue-500 block p-2.5 outline-none cursor-pointer"
+                                    value={selectedDoctor}
+                                    onChange={(e) => setSelectedDoctor(e.target.value)}
+                                >
+                                    <option value="">Any available doctor (or use Voice/Text below)</option>
+                                    {hospital.doctors?.map((doc, idx) => (
+                                        <option key={idx} value={doc.name}>
+                                            {doc.name} - {doc.specialty}
+                                        </option>
+                                    ))}
+                                </select>
+                            </div>
+
                             <div className="relative group">
                                 <div className={`absolute -inset-1 rounded-2xl bg-gradient-to-r from-blue-500 to-cyan-500 opacity-20 blur-sm transition duration-500 ${isListening ? 'opacity-40 animate-pulse' : 'group-hover:opacity-30'}`}></div>
                                 <div className="relative bg-white border border-gray-200 rounded-2xl p-4 min-h-[120px] shadow-sm">
@@ -134,12 +163,36 @@ export default function AppointmentModal({ hospital, onClose }) {
                         <div className="space-y-5 animate-in slide-in-from-bottom-4 duration-300">
                             <div className="bg-blue-50/50 p-5 rounded-3xl border border-blue-100/50 space-y-4">
                                 <div className="flex items-center gap-4">
-                                    <div className="w-10 h-10 rounded-2xl bg-white shadow-sm flex items-center justify-center text-blue-600 border border-blue-50">
+                                    <div className="w-10 h-10 rounded-2xl bg-white shadow-sm flex items-center justify-center text-blue-600 border border-blue-50 flex-shrink-0">
                                         <User className="w-5 h-5" />
                                     </div>
-                                    <div>
-                                        <p className="text-[10px] uppercase tracking-wider font-bold text-blue-400">Specialization</p>
-                                        <p className="text-gray-900 font-semibold">{extractedData.specialization || "Not specified"}</p>
+                                    <div className="flex-1 min-w-0">
+                                        <p className="text-[10px] uppercase tracking-wider font-bold text-blue-400 mb-1">Doctor & Specialization</p>
+                                        <select
+                                            className="w-full bg-transparent text-gray-900 font-semibold text-sm border-b border-blue-200 focus:border-blue-500 outline-none pb-1 cursor-pointer truncate"
+                                            value={extractedData.doctor_name || ''}
+                                            onChange={(e) => {
+                                                const selectedDocName = e.target.value;
+                                                const selectedDoc = hospital.doctors?.find(d => d.name === selectedDocName);
+                                                setExtractedData({
+                                                    ...extractedData,
+                                                    doctor_name: selectedDocName,
+                                                    specialization: selectedDoc ? selectedDoc.specialty : extractedData.specialization
+                                                });
+
+                                                // Sync back to step 1 state
+                                                setSelectedDoctor(selectedDocName);
+                                            }}
+                                        >
+                                            <option value="">
+                                                {extractedData.specialization ? `Any Doctor (${extractedData.specialization})` : 'Choose a Doctor...'}
+                                            </option>
+                                            {hospital.doctors?.map((doc, idx) => (
+                                                <option key={idx} value={doc.name}>
+                                                    {doc.name} ({doc.specialty})
+                                                </option>
+                                            ))}
+                                        </select>
                                     </div>
                                 </div>
                                 <div className="grid grid-cols-2 gap-4">
