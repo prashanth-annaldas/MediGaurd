@@ -87,4 +87,52 @@ class Appointment(Base):
     raw_message = Column(String)
     patient_name = Column(String, nullable=True)
     patient_phone = Column(String, nullable=True)
+    follow_up_date = Column(String, nullable=True) # YYYY-MM-DD
+    created_at = Column(String)
+
+class Prescription(Base):
+    __tablename__ = "prescriptions"
+
+    id = Column(Integer, primary_key=True, index=True)
+    appointment_id = Column(Integer, ForeignKey("appointments.id"), index=True)
+    patient_id = Column(Integer, ForeignKey("patients.id"), index=True)
+    doctor_id = Column(Integer, ForeignKey("users.id"), index=True)
+    notes = Column(String, nullable=True)
+    follow_up_days = Column(Integer, nullable=True)
+    created_at = Column(String)
+
+class PrescriptionMedicine(Base):
+    __tablename__ = "prescription_medicines"
+
+    id = Column(Integer, primary_key=True, index=True)
+    prescription_id = Column(Integer, ForeignKey("prescriptions.id"), index=True)
+    medicine_name = Column(String)
+    dose = Column(String)
+    morning = Column(Integer, default=0)   # 0 or 1
+    afternoon = Column(Integer, default=0) # 0 or 1
+    night = Column(Integer, default=0)     # 0 or 1
+
+class PatientReport(Base):
+    __tablename__ = "patient_reports"
+
+    id = Column(Integer, primary_key=True, index=True)
+    appointment_id = Column(Integer, ForeignKey("appointments.id"), index=True)
+    file_path = Column(String)
+    uploaded_at = Column(String)
+
+class Patient(Base):
+    __tablename__ = "patients"
+
+    id = Column(Integer, primary_key=True, index=True)
+    full_name = Column(String, index=True)
+    age = Column(Integer)
+    gender = Column(String)
+    height = Column(Float, nullable=True)   # cm
+    weight = Column(Float, nullable=True)   # kg
+    phone = Column(String)
+    email = Column(String)
+    address = Column(String)
+    blood_group = Column(String)
+    emergency_contact = Column(String)
+    medical_history = Column(String, nullable=True)
     created_at = Column(String)

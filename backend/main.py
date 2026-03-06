@@ -10,7 +10,7 @@ import random
 import datetime
 import json
 from typing import Optional, List
-from fastapi import FastAPI, HTTPException, Depends
+from fastapi import FastAPI, HTTPException, Depends, File, Form, UploadFile
 from fastapi.middleware.cors import CORSMiddleware
 from pydantic import BaseModel
 from dotenv import load_dotenv
@@ -29,6 +29,14 @@ app = FastAPI(
     title="MedGuard AI Backend",
     description="Privacy-preserving hospital resource intelligence API",
     version="1.0.0"
+)
+
+app.add_middleware(
+    CORSMiddleware,
+    allow_origins=["*"],
+    allow_credentials=True,
+    allow_methods=["*"],
+    allow_headers=["*"],
 )
 
 # Include auth router
@@ -102,14 +110,8 @@ seed_users()
 # Initialize ML Model
 ml_model.load_and_train_model()
 
-app.add_middleware(
-    CORSMiddleware,
-    allow_origins=["http://localhost:5173", "http://localhost:5174", "http://localhost:3000", "http://127.0.0.1:5173", "http://127.0.0.1:5174", "https://medigaurd.vercel.app", "https://medigaurd1.web.app", "https://medigaurd1.firebaseapp.com"],
-    allow_origin_regex=r"https://.*",
-    allow_credentials=True,
-    allow_methods=["*"],
-    allow_headers=["*"],
-)
+# Initialize ML Model
+ml_model.load_and_train_model()
 
 @app.middleware("http")
 async def log_requests(request, call_next):
@@ -376,6 +378,30 @@ def admit_patient(data: QRScanData, db: Session = Depends(get_db), current_user:
     db.commit()
     
     return {"message": "Patient admitted successfully", "available_beds": hospital.available_beds, "hospital": hospital_name}
+
+@app.get("/api/appointments/{appt_id}")
+def get_appointment_details(appt_id: int, db: Session = Depends(get_db), current_user: models.User = Depends(auth.get_current_user)):
+    """Fetch specific appointment details including patient info if available."""
+    appt = db.query(models.Appointment).filter(models.Appointment.id == appt_id).first()
+    if not appt:
+        raise HTTPException(status_code=404, detail="Appointment not found")
+    
+    # Enrich with Patient table data
+    patient = db.query(models.Patient).filter(models.Patient.full_name == appt.patient_name).first()
+    
+    return {
+        "id": appt.id,
+        "patient_name": appt.patient_name,
+        "patient_phone": appt.patient_phone,
+        "patient_age": patient.age if patient else None,
+        "patient_gender": patient.gender if patient else None,
+        "date": appt.date,
+        "time": appt.time,
+        "specialization": appt.specialization,
+        "doctor_name": appt.doctor_name,
+        "status": appt.status,
+        "created_at": appt.created_at
+    }
 
 @app.post("/api/hospitals/discharge")
 def discharge_patient(data: QRScanData, db: Session = Depends(get_db), current_user: models.User = Depends(auth.get_current_staff_user)):
@@ -1191,6 +1217,180 @@ def get_appointments(db: Session = Depends(get_db), current_user: models.User = 
         traceback.print_exc()
         raise HTTPException(status_code=500, detail=str(e))
 
+@app.get("/api/appointments/{appt_id}")
+def get_appointment_details(appt_id: int, db: Session = Depends(get_db), current_user: models.User = Depends(auth.get_current_user)):
+    """Fetch specific appointment details including patient info if available."""
+    appt = db.query(models.Appointment).filter(models.Appointment.id == appt_id).first()
+    if not appt:
+        raise HTTPException(status_code=404, detail="Appointment not found")
+    
+    patient = db.query(models.Patient).filter(models.Patient.full_name == appt.patient_name).first()
+    
+    return {
+        "id": appt.id,
+        "patient_name": appt.patient_name,
+        "patient_phone": appt.patient_phone,
+        "patient_age": patient.age if patient else None,
+        "patient_gender": patient.gender if patient else None,
+        "date": appt.date,
+        "time": appt.time,
+        "specialization": appt.specialization,
+        "doctor_name": appt.doctor_name,
+        "status": appt.status,
+        "created_at": appt.created_at
+    }
+
+@app.put("/api/appointments/{appt_id}/status")
+def update_appointment_status(appt_id: int, status: str, db: Session = Depends(get_db), current_user: models.User = Depends(auth.get_current_user)):
+    """Update appointment status (ONGOING, FINISHED, etc.)"""
+    appt = db.query(models.Appointment).filter(models.Appointment.id == appt_id).first()
+    if not appt:
+        raise HTTPException(status_code=404, detail="Appointment not found")
+    
+    appt.status = status.upper()
+    db.commit()
+    return {"message": f"Appointment status updated to {status}"}
+
+@app.post("/api/appointments/{appt_id}/follow-up")
+def schedule_follow_up(appt_id: int, days: int, notes: str = None, db: Session = Depends(get_db), current_user: models.User = Depends(auth.get_current_user)):
+    """Schedule a follow-up visit based on previous appointment."""
+    old_appt = db.query(models.Appointment).filter(models.Appointment.id == appt_id).first()
+    if not old_appt:
+        raise HTTPException(status_code=404, detail="Appointment not found")
+    
+    # Calculate follow-up date
+    try:
+        base_date = datetime.date.fromisoformat(old_appt.date)
+    except:
+        base_date = datetime.date.today()
+    
+    follow_up_date = (base_date + datetime.timedelta(days=days)).isoformat()
+    
+    new_app = models.Appointment(
+        user_id=old_appt.user_id,
+        hospital_id=old_appt.hospital_id,
+        hospital_name=old_appt.hospital_name,
+        specialization=old_appt.specialization,
+        doctor_name=old_appt.doctor_name,
+        date=follow_up_date,
+        time=old_appt.time,
+        raw_message=f"Follow-up for appointment #{appt_id}. Notes: {notes or ''}",
+        patient_name=old_appt.patient_name,
+        patient_phone=old_appt.patient_phone,
+        status="FOLLOW_UP",
+        created_at=datetime.datetime.utcnow().isoformat() + "Z"
+    )
+    
+    old_appt.follow_up_date = follow_up_date
+    old_appt.status = "FOLLOW_UP_REQUIRED"
+    
+    db.add(new_app)
+    db.commit()
+    return {"message": "Follow-up scheduled", "follow_up_date": follow_up_date}
+
+@app.post("/api/prescriptions")
+async def save_prescription(
+    appointment_id: int = Form(...),
+    notes: Optional[str] = Form(None),
+    follow_up_days: Optional[int] = Form(None),
+    medicines: str = Form(...), # JSON stringified list
+    reports: List[UploadFile] = File([]),
+    db: Session = Depends(get_db),
+    current_user: models.User = Depends(auth.get_current_user)
+):
+    """Save prescription, medicines, and reports."""
+    appt = db.query(models.Appointment).filter(models.Appointment.id == appointment_id).first()
+    if not appt:
+        raise HTTPException(status_code=404, detail="Appointment not found")
+
+    patient = db.query(models.Patient).filter(models.Patient.full_name == appt.patient_name).first()
+    patient_id = patient.id if patient else None
+
+    # 1. Prescription
+    new_prescription = models.Prescription(
+        appointment_id=appointment_id,
+        patient_id=patient_id,
+        doctor_id=current_user.id,
+        notes=notes,
+        follow_up_days=follow_up_days,
+        created_at=datetime.datetime.utcnow().isoformat() + "Z"
+    )
+    db.add(new_prescription)
+    db.commit()
+    db.refresh(new_prescription)
+
+    # 2. Medicines
+    import json
+    try:
+        meds_list = json.loads(medicines)
+        for m in meds_list:
+            new_med = models.PrescriptionMedicine(
+                prescription_id=new_prescription.id,
+                medicine_name=m.get("name"),
+                dose=m.get("dose"),
+                morning=1 if m.get("morning") else 0,
+                afternoon=1 if m.get("afternoon") else 0,
+                night=1 if m.get("night") else 0
+            )
+            db.add(new_med)
+    except Exception as e:
+        print(f"Medicine parse error: {e}")
+
+    # 3. Reports
+    REPORTS_DIR = os.path.join(UPLOAD_DIR, "reports")
+    os.makedirs(REPORTS_DIR, exist_ok=True)
+
+    for report in reports:
+        if report.filename:
+            safe_name = f"{int(datetime.datetime.utcnow().timestamp())}_{report.filename}"
+            file_path = os.path.join(REPORTS_DIR, safe_name)
+            with open(file_path, "wb") as buffer:
+                shutil.copyfileobj(report.file, buffer)
+            new_report = models.PatientReport(
+                appointment_id=appointment_id,
+                file_path=safe_name,
+                uploaded_at=datetime.datetime.utcnow().isoformat() + "Z"
+            )
+            db.add(new_report)
+
+    db.commit()
+    return {"message": "Prescription saved", "prescription_id": new_prescription.id}
+
+@app.get("/api/prescriptions/appointment/{appt_id}")
+def get_prescription_by_appointment(appt_id: int, db: Session = Depends(get_db), current_user: models.User = Depends(auth.get_current_user)):
+    """Fetch full prescription details for an appointment."""
+    prescription = db.query(models.Prescription).filter(models.Prescription.appointment_id == appt_id).first()
+    if not prescription:
+        raise HTTPException(status_code=404, detail="Prescription not found")
+    
+    medicines = db.query(models.PrescriptionMedicine).filter(models.PrescriptionMedicine.prescription_id == prescription.id).all()
+    reports = db.query(models.PatientReport).filter(models.PatientReport.appointment_id == appt_id).all()
+    
+    return {
+        "prescription": {
+            "id": prescription.id,
+            "notes": prescription.notes,
+            "follow_up_days": prescription.follow_up_days,
+            "created_at": prescription.created_at
+        },
+        "medicines": [
+            {
+                "name": m.medicine_name,
+                "dose": m.dose,
+                "morning": bool(m.morning),
+                "afternoon": bool(m.afternoon),
+                "night": bool(m.night)
+            } for m in medicines
+        ],
+        "reports": [
+            {
+                "id": r.id,
+                "file_path": r.file_path,
+                "uploaded_at": r.uploaded_at
+            } for r in reports
+        ]
+    }
+
 
 @app.get("/api/admin/debug/appointments")
 def debug_list_appointments(db: Session = Depends(get_db), current_user: models.User = Depends(auth.get_current_admin_user)):
@@ -1321,3 +1521,87 @@ def get_hospital_history(hospital_name: str, db: Session = Depends(get_db)):
         "history": history,
         "predictions": predictions,
     }
+
+# ─── Patient Registration ─────────────────────────────────────────────────────
+
+from fastapi import Form, UploadFile, File
+import shutil
+
+UPLOAD_DIR = os.path.join(os.path.dirname(__file__), "uploads")
+os.makedirs(UPLOAD_DIR, exist_ok=True)
+
+@app.post("/api/patients")
+async def register_patient(
+    full_name: str = Form(...),
+    age: int = Form(...),
+    gender: str = Form(...),
+    height: Optional[float] = Form(None),
+    weight: Optional[float] = Form(None),
+    phone: str = Form(...),
+    email: str = Form(...),
+    address: str = Form(...),
+    blood_group: str = Form(...),
+    emergency_contact: str = Form(...),
+    medical_history_file: Optional[UploadFile] = File(None),
+    db: Session = Depends(get_db),
+):
+    """Register a new patient and optionally save their uploaded medical history PDF."""
+    saved_filename = None
+
+    if medical_history_file and medical_history_file.filename:
+        # Validate PDF mime type
+        if medical_history_file.content_type not in ("application/pdf",):
+            raise HTTPException(status_code=400, detail="Only PDF files are accepted for medical history.")
+
+        # Build a unique filename to avoid collisions
+        timestamp = int(datetime.datetime.utcnow().timestamp())
+        safe_name = f"{timestamp}_{medical_history_file.filename}"
+        file_path = os.path.join(UPLOAD_DIR, safe_name)
+
+        with open(file_path, "wb") as buffer:
+            shutil.copyfileobj(medical_history_file.file, buffer)
+
+        saved_filename = safe_name
+
+    new_patient = models.Patient(
+        full_name=full_name,
+        age=age,
+        gender=gender,
+        height=height,
+        weight=weight,
+        phone=phone,
+        email=email,
+        address=address,
+        blood_group=blood_group,
+        emergency_contact=emergency_contact,
+        medical_history=saved_filename,   # stores the filename (or None)
+        created_at=datetime.datetime.utcnow().isoformat() + "Z",
+    )
+    db.add(new_patient)
+    db.commit()
+    db.refresh(new_patient)
+    return {"message": "Patient information saved successfully", "patient_id": new_patient.id}
+
+@app.get("/api/patients")
+def get_patients(db: Session = Depends(get_db), current_user: models.User = Depends(auth.get_current_user)):
+    """Get all registered patients (Admin/Staff only)."""
+    if current_user.role not in ["ADMIN", "STAFF"]:
+        raise HTTPException(status_code=403, detail="Access denied")
+    patients = db.query(models.Patient).order_by(models.Patient.created_at.desc()).all()
+    return [
+        {
+            "id": p.id,
+            "full_name": p.full_name,
+            "age": p.age,
+            "gender": p.gender,
+            "phone": p.phone,
+            "email": p.email,
+            "address": p.address,
+            "blood_group": p.blood_group,
+            "emergency_contact": p.emergency_contact,
+            "medical_history_file": p.medical_history,
+            "created_at": p.created_at,
+        }
+        for p in patients
+    ]
+

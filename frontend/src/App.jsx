@@ -18,6 +18,10 @@ import DischargePatient from './components/staff/DischargePatient'
 import QRGenerator from './components/staff/QRGenerator'
 import Appointments from './components/staff/Appointments'
 import DoctorAppointments from './components/doctor/DoctorAppointments'
+import PatientRegistration from './components/staff/PatientRegistration'
+import DoctorPrescription from './components/doctor/DoctorPrescription'
+import UserAppointments from './components/user/UserAppointments'
+import UserPrescriptionView from './components/user/UserPrescriptionView'
 import useStore from './store/useStore'
 
 const ProtectedRoute = ({ children, allowedRoles }) => {
@@ -103,6 +107,7 @@ export default function App() {
             <Route path="/doctor/forecast" element={<ProtectedRoute allowedRoles={['DOCTOR']}><HospitalRequiredRoute><ForecastDashboard /></HospitalRequiredRoute></ProtectedRoute>} />
             <Route path="/doctor/trends" element={<ProtectedRoute allowedRoles={['DOCTOR']}><HospitalRequiredRoute><TrendAnalytics /></HospitalRequiredRoute></ProtectedRoute>} />
             <Route path="/doctor/gemini" element={<ProtectedRoute allowedRoles={['DOCTOR']}><GeminiChat /></ProtectedRoute>} />
+            <Route path="/doctor/prescription/:appointmentId" element={<ProtectedRoute allowedRoles={['DOCTOR']}><DoctorPrescription /></ProtectedRoute>} />
 
             {/* User Routes */}
             <Route path="/user/hospitals" element={<ProtectedRoute allowedRoles={['USER']}><HospitalSearch /></ProtectedRoute>} />
@@ -112,6 +117,9 @@ export default function App() {
             <Route path="/user/forecast" element={<ProtectedRoute allowedRoles={['USER']}><HospitalRequiredRoute><ForecastDashboard /></HospitalRequiredRoute></ProtectedRoute>} />
             <Route path="/user/trends" element={<ProtectedRoute allowedRoles={['USER']}><HospitalRequiredRoute><TrendAnalytics /></HospitalRequiredRoute></ProtectedRoute>} />
             <Route path="/user/gemini" element={<ProtectedRoute allowedRoles={['USER']}><GeminiChat /></ProtectedRoute>} />
+            <Route path="/user/patients" element={<ProtectedRoute allowedRoles={['USER']}><PatientRegistration /></ProtectedRoute>} />
+            <Route path="/user/appointments" element={<ProtectedRoute allowedRoles={['USER']}><UserAppointments /></ProtectedRoute>} />
+            <Route path="/user/prescription/:appointmentId" element={<ProtectedRoute allowedRoles={['USER']}><UserPrescriptionView /></ProtectedRoute>} />
 
             {/* Legacy Fallback Redirects to new role-prefixed routes */}
             <Route path="/hospitals" element={<ProtectedRoute><RootRedirect /></ProtectedRoute>} />

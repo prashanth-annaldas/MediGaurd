@@ -3,7 +3,7 @@ import { NavLink, useLocation, useNavigate } from 'react-router-dom'
 import {
     LayoutDashboard, Activity, Bell, TrendingUp,
     Brain, Settings, ChevronLeft, ChevronRight,
-    Shield, Plus, Users, MapPin, UserPlus, UserMinus, QrCode, CalendarDays
+    Shield, Plus, Users, MapPin, UserPlus, UserMinus, QrCode, CalendarDays, ClipboardList
 } from 'lucide-react'
 import useStore from '../../store/useStore'
 import { useClock } from '../../hooks/useClock'
@@ -22,6 +22,9 @@ const navItems = [
     { to: '/admit', icon: UserPlus, label: 'Admit Patient', staffOnly: true },
     { to: '/discharge', icon: UserMinus, label: 'Discharge Patient', staffOnly: true },
     { to: '/qr-gen', icon: QrCode, label: 'QR Generator', staffOnly: true },
+    { to: '/patients', icon: ClipboardList, label: 'Register Patient', userOnly: true, alwaysShowForUser: true },
+    { to: '/appointments', icon: CalendarDays, label: 'Appointments', userOnly: true, alwaysShowForUser: true },
+    { to: '/appointments', icon: ClipboardList, label: 'Prescriptions', doctorOnly: true },
 ]
 
 export default function Sidebar() {

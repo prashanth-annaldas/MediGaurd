@@ -1,5 +1,6 @@
 import React, { useState, useEffect } from 'react';
-import { Calendar, Clock, User, Phone, CheckCircle, XCircle, Activity, Stethoscope } from 'lucide-react';
+import { Calendar, Clock, User, Phone, CheckCircle, XCircle, Activity, Stethoscope, FileText } from 'lucide-react';
+import { useNavigate } from 'react-router-dom';
 import Layout from '../layout/Layout';
 import useStore from '../../store/useStore';
 
@@ -9,6 +10,8 @@ export default function DoctorAppointments() {
     const [error, setError] = useState(null);
     const token = useStore(state => state.token);
     const user = useStore(state => state.user);
+    const navigate = useNavigate();
+
 
     useEffect(() => {
         fetchAppointments();
@@ -83,6 +86,7 @@ export default function DoctorAppointments() {
                                         <th scope="col" className="px-6 py-3 text-left text-xs font-medium text-[var(--text-muted)] uppercase tracking-wider">Date & Time</th>
                                         <th scope="col" className="px-6 py-3 text-left text-xs font-medium text-[var(--text-muted)] uppercase tracking-wider">Specialization</th>
                                         <th scope="col" className="px-6 py-3 text-left text-xs font-medium text-[var(--text-muted)] uppercase tracking-wider">Status</th>
+                                        <th scope="col" className="px-6 py-3 text-right text-xs font-medium text-[var(--text-muted)] uppercase tracking-wider">Action</th>
                                     </tr>
                                 </thead>
                                 <tbody className="divide-y divide-navy-700">
@@ -124,6 +128,15 @@ export default function DoctorAppointments() {
                                                     }`}>
                                                     {appt.status.charAt(0).toUpperCase() + appt.status.slice(1)}
                                                 </span>
+                                            </td>
+                                            <td className="px-6 py-4 whitespace-nowrap text-right text-sm font-medium">
+                                                <button
+                                                    onClick={() => navigate(`/doctor/prescription/${appt.id}`)}
+                                                    className="inline-flex items-center gap-1.5 text-teal-400 hover:text-teal-300 transition-colors bg-teal-500/10 px-3 py-1.5 rounded-lg border border-teal-500/20"
+                                                >
+                                                    <FileText size={14} />
+                                                    Prescribe
+                                                </button>
                                             </td>
                                         </tr>
                                     ))}
