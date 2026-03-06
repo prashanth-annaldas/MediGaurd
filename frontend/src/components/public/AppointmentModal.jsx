@@ -21,12 +21,14 @@ export default function AppointmentModal({ hospital, onClose }) {
         return `${h12}:${minutes} ${ampm}`;
     };
 
+    const API = import.meta.env.VITE_API_URL || 'https://medigaurd1-fzd9.onrender.com';
+
     const handleExtract = async () => {
         if (!message.trim()) return;
         setIsExtracting(true);
         setError(null);
         try {
-            const res = await fetch(`/api/appointments/extract`, {
+            const res = await fetch(`${API}/api/appointments/extract`, {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
                 body: JSON.stringify({ message })
@@ -46,7 +48,7 @@ export default function AppointmentModal({ hospital, onClose }) {
         setBooking(true);
         setError(null);
         try {
-            const res = await fetch(`/api/appointments`, {
+            const res = await fetch(`${API}/api/appointments`, {
                 method: 'POST',
                 headers: {
                     'Content-Type': 'application/json',
@@ -94,7 +96,35 @@ export default function AppointmentModal({ hospital, onClose }) {
                     </p>
 
                     {step === 1 && (
-                        <div className="space-y-6">
+                        <div className="space-y-5">
+                            {/* Doctor Quick Select */}
+                            {hospital.doctors && hospital.doctors.length > 0 && (
+                                <div>
+                                    <label className="text-xs font-semibold text-gray-500 uppercase tracking-wider mb-1.5 block">
+                                        Quick Select Doctor (optional)
+                                    </label>
+                                    <select
+                                        className="w-full px-3 py-2.5 bg-gray-50 border border-gray-200 rounded-xl text-sm text-gray-700 focus:outline-none focus:ring-2 focus:ring-blue-400 focus:border-transparent transition-all appearance-none"
+                                        style={{ backgroundImage: `url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='16' height='16' fill='%239ca3af' viewBox='0 0 16 16'%3E%3Cpath d='M4.646 5.646a.5.5 0 0 1 .708 0L8 8.293l2.646-2.647a.5.5 0 0 1 .708.708l-3 3a.5.5 0 0 1-.708 0l-3-3a.5.5 0 0 1 0-.708z'/%3E%3C/svg%3E")`, backgroundRepeat: 'no-repeat', backgroundPosition: 'right 12px center' }}
+                                        defaultValue=""
+                                        onChange={(e) => {
+                                            if (!e.target.value) return;
+                                            const doc = hospital.doctors[parseInt(e.target.value)];
+                                            if (doc) {
+                                                setMessage(`I want to book an appointment with ${doc.name} for ${doc.specialty}`);
+                                            }
+                                        }}
+                                    >
+                                        <option value="">— Browse available doctors —</option>
+                                        {hospital.doctors.map((doc, idx) => (
+                                            <option key={idx} value={idx}>
+                                                {doc.name} · {doc.specialty} · {doc.experience}
+                                            </option>
+                                        ))}
+                                    </select>
+                                </div>
+                            )}
+
                             <div className="relative group">
                                 <div className={`absolute -inset-1 rounded-2xl bg-gradient-to-r from-blue-500 to-cyan-500 opacity-20 blur-sm transition duration-500 ${isListening ? 'opacity-40 animate-pulse' : 'group-hover:opacity-30'}`}></div>
                                 <div className="relative bg-white border border-gray-200 rounded-2xl p-4 min-h-[120px] shadow-sm">
@@ -125,7 +155,7 @@ export default function AppointmentModal({ hospital, onClose }) {
                             </div>
                             <div className="flex items-center gap-2 text-[11px] text-gray-400 bg-gray-50 p-2.5 rounded-xl border border-dashed border-gray-200">
                                 <AlertCircle className="w-3.5 h-3.5" />
-                                <span>Voice assistance active. Record or type your request.</span>
+                                <span>Select a doctor above or type your request below. Voice also available.</span>
                             </div>
                         </div>
                     )}
