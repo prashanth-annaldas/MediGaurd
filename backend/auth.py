@@ -101,6 +101,41 @@ def register(user: UserCreate, db: Session = Depends(get_db)):
         raise HTTPException(status_code=400, detail="Email already registered")
     
     hashed_password = get_password_hash(user.password)
+    
+    # Strict Doctor Validation
+    if user.role == "DOCTOR":
+        if not user.hospital_name:
+            raise HTTPException(status_code=400, detail="Hospital name is required for doctor registration")
+            
+        hospital = db.query(models.Hospital).filter(models.Hospital.name == user.hospital_name).first()
+        if not hospital:
+            raise HTTPException(status_code=400, detail=f"Hospital '{user.hospital_name}' not found")
+            
+        import json
+        import re
+        
+        try:
+            hospital_doctors = json.loads(hospital.doctors) if hospital.doctors else []
+        except:
+            hospital_doctors = []
+            
+        def normalize(name):
+            if not name: return ""
+            return re.sub(r'^dr\.?\s*', '', name, flags=re.IGNORECASE).strip().lower()
+            
+        reg_name = normalize(user.name)
+        found = False
+        for doc in hospital_doctors:
+            if normalize(doc.get("name")) == reg_name:
+                found = True
+                break
+        
+        if not found:
+            raise HTTPException(
+                status_code=400, 
+                detail=f"Registration failed: Your name '{user.name}' was not found in the staff list for {user.hospital_name}. Please contact the hospital administrator."
+            )
+
     new_user = models.User(
         name=user.name, 
         email=user.email, 

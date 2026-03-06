@@ -1,6 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { Calendar, Clock, User, Phone, XCircle } from 'lucide-react';
-import { useLocation } from 'react-router-dom';
+import { Calendar, Clock, User, Phone, CheckCircle, XCircle, Activity, Stethoscope } from 'lucide-react';
 import Layout from '../layout/Layout';
 import useStore from '../../store/useStore';
 
@@ -10,36 +9,23 @@ export default function DoctorAppointments() {
     const [error, setError] = useState(null);
     const token = useStore(state => state.token);
     const user = useStore(state => state.user);
-    const selectedHospital = useStore(state => state.selectedHospital);
-    const location = useLocation();
-
-    // Read the ?doctor=name query param (set by clicking a doctor in the sidebar)
-    const urlParams = new URLSearchParams(location.search);
-    const selectedDoctor = urlParams.get('doctor') || '';
-
-    // Effective hospital — prefer the DB value, fall back to whatever was selected
-    const effectiveHospital = user?.hospital_name || selectedHospital?.name || '';
 
     useEffect(() => {
         fetchAppointments();
-    }, [token, location.search, effectiveHospital]);
+    }, [token, user]);
 
     const fetchAppointments = async () => {
         if (!token) return;
         setLoading(true);
-        setError(null);
         try {
-            const params = new URLSearchParams();
-            if (selectedDoctor) params.set('doctor_name', selectedDoctor);
-            if (!user?.hospital_name && selectedHospital?.name) {
-                params.set('hospital_name', selectedHospital.name);
-            }
-            const query = params.toString() ? `?${params.toString()}` : '';
-            const res = await fetch(`/api/appointments${query}`, {
+            const res = await fetch(`/api/appointments`, {
                 headers: { 'Authorization': `Bearer ${token}` }
             });
             if (!res.ok) throw new Error('Failed to fetch appointments');
             const data = await res.json();
+
+            // Backend already filters by doctor name + hospital — no client-side filter needed
+            // Sort by date/time (most recent first)
             data.sort((a, b) => new Date(`${b.date}T${b.time}`) - new Date(`${a.date}T${a.time}`));
             setAppointments(data);
         } catch (err) {
@@ -63,14 +49,9 @@ export default function DoctorAppointments() {
             <div className="max-w-7xl mx-auto py-6 px-4">
                 <div className="flex justify-between items-center mb-6">
                     <div>
-                        <h1 className="text-2xl font-bold text-[var(--text-primary)]">
-                            {selectedDoctor ? `${selectedDoctor}'s Appointments` : 'My Appointments'}
-                        </h1>
+                        <h1 className="text-2xl font-bold text-[var(--text-primary)]">My Appointments</h1>
                         <p className="text-[var(--text-muted)] text-sm mt-1">
-                            {selectedDoctor
-                                ? `Viewing appointments for ${selectedDoctor} at ${effectiveHospital}.`
-                                : `Welcome, Dr. ${user?.displayName || user?.name}. Here are your upcoming patient bookings at ${effectiveHospital}.`
-                            }
+                            Welcome, Dr. {user?.displayName || user?.name}. Here are your upcoming patient bookings at {user?.hospital_name}.
                         </p>
                     </div>
                 </div>
@@ -90,11 +71,7 @@ export default function DoctorAppointments() {
                             <Calendar className="text-teal-500 w-8 h-8" />
                         </div>
                         <h3 className="text-xl font-bold text-[var(--text-primary)] mb-2">No Appointments Found</h3>
-                        <p className="text-[var(--text-muted)] max-w-sm mx-auto">
-                            There are currently no patient bookings
-                            {selectedDoctor ? ` for ${selectedDoctor}` : ' assigned to you'}
-                            {effectiveHospital ? ` at ${effectiveHospital}` : ''}.
-                        </p>
+                        <p className="text-[var(--text-muted)] max-w-sm mx-auto">There are currently no patient bookings assigned to you.</p>
                     </div>
                 ) : (
                     <div className="bg-[var(--bg-secondary)] rounded-2xl shadow-sm border border-navy-700 overflow-hidden">
@@ -103,7 +80,7 @@ export default function DoctorAppointments() {
                                 <thead className="bg-[#0f172a]/50">
                                     <tr>
                                         <th scope="col" className="px-6 py-3 text-left text-xs font-medium text-[var(--text-muted)] uppercase tracking-wider">Patient</th>
-                                        <th scope="col" className="px-6 py-3 text-left text-xs font-medium text-[var(--text-muted)] uppercase tracking-wider">Date &amp; Time</th>
+                                        <th scope="col" className="px-6 py-3 text-left text-xs font-medium text-[var(--text-muted)] uppercase tracking-wider">Date & Time</th>
                                         <th scope="col" className="px-6 py-3 text-left text-xs font-medium text-[var(--text-muted)] uppercase tracking-wider">Specialization</th>
                                         <th scope="col" className="px-6 py-3 text-left text-xs font-medium text-[var(--text-muted)] uppercase tracking-wider">Status</th>
                                     </tr>
@@ -120,7 +97,7 @@ export default function DoctorAppointments() {
                                                         <div className="text-sm font-medium text-[var(--text-primary)]">{appt.patient_name || 'Anonymous User'}</div>
                                                         <div className="text-sm text-[var(--text-muted)] flex items-center gap-1 mt-0.5">
                                                             <Phone className="w-3 h-3" />
-                                                            {appt.patient_phone || appt.patient_email || 'No contact'}
+                                                            {appt.patient_phone || 'No contact'}
                                                         </div>
                                                     </div>
                                                 </div>
@@ -145,7 +122,7 @@ export default function DoctorAppointments() {
                                                     appt.status === 'pending' ? 'bg-amber-500/10 text-amber-400 border border-amber-500/20' :
                                                         'bg-gray-500/10 text-gray-400 border border-gray-500/20'
                                                     }`}>
-                                                    {appt.status ? appt.status.charAt(0).toUpperCase() + appt.status.slice(1) : 'Pending'}
+                                                    {appt.status.charAt(0).toUpperCase() + appt.status.slice(1)}
                                                 </span>
                                             </td>
                                         </tr>
