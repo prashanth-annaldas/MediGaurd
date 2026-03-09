@@ -10,7 +10,7 @@ import {
 } from '../../services/firebase';
 import { Mail, Lock, Phone, AlertCircle, Loader2 } from 'lucide-react';
 import useStore from '../../store/useStore';
-import RainBackground from './RainBackground';
+import NetworkBackground from '../public/NetworkBackground';
 
 export default function Login() {
     const [email, setEmail] = useState('');
@@ -144,7 +144,7 @@ export default function Login() {
 
     return (
         <div className="min-h-screen bg-[var(--bg-primary)] flex items-center justify-center p-4 relative overflow-hidden">
-            <RainBackground />
+            <NetworkBackground />
             {/* Background elements */}
             <div className="absolute top-[-20%] left-[-10%] w-[500px] h-[500px] bg-teal-500/10 rounded-full blur-[100px] pointer-events-none" />
             <div className="absolute bottom-[-20%] right-[-10%] w-[500px] h-[500px] bg-blue-500/10 rounded-full blur-[100px] pointer-events-none" />

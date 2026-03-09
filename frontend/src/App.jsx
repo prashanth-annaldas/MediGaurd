@@ -21,6 +21,7 @@ import UserAppointments from './components/user/UserAppointments'
 import UserPrescriptionView from './components/user/UserPrescriptionView'
 import BedManagement from './components/staff/BedManagement'
 import BedDetail from './components/public/BedDetail'
+import Landing from './components/public/Landing'
 import useStore from './store/useStore'
 
 const ProtectedRoute = ({ children, allowedRoles }) => {
@@ -46,7 +47,7 @@ const HospitalRequiredRoute = ({ children }) => {
     return children;
 };
 
-// Root redirect based on role
+// Root redirect based on role (kept for Legacy Fallback usage)
 const RootRedirect = () => {
     const user = useStore(state => state.user);
     if (!user) return <Navigate to="/login" replace />;
@@ -71,7 +72,7 @@ export default function App() {
             <Route path="/public/stress-index" element={<StressIndexView />} />
             <Route path="/bed/:qrCode" element={<BedDetail />} />
 
-            <Route path="/" element={<RootRedirect />} />
+            <Route path="/" element={<Landing />} />
 
             {/* Admin Routes */}
             <Route path="/admin/dashboard" element={<ProtectedRoute allowedRoles={['ADMIN']}><HospitalRequiredRoute><SmartDashboard /></HospitalRequiredRoute></ProtectedRoute>} />
