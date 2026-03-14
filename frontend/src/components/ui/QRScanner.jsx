@@ -34,9 +34,9 @@ export default function QRScanner({ onScanSuccess, onScanError, fps = 10, qrbox 
     }, []);
 
     return (
-        <div className="w-full max-w-md mx-auto overflow-hidden rounded-2xl border border-navy-700 bg-[var(--bg-secondary)] shadow-2xl">
+        <div className="w-full max-w-md mx-auto overflow-hidden rounded-2xl border" style={{ background: 'var(--bg-secondary)', borderColor: 'var(--border-color)' }}>
             <div id="reader" className="w-full"></div>
-            <div className="p-4 bg-navy-900/50 text-center">
+            <div className="p-4 text-center" style={{ background: 'var(--bg-card)', borderTop: '1px solid var(--border-color)' }}>
                 <p className="text-xs text-[var(--text-muted)]">Align QR code within the frame to scan</p>
             </div>
         </div>

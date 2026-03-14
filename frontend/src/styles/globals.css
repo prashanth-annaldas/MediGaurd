@@ -699,3 +699,39 @@ body {
         box-shadow: 0 8px 24px rgba(0, 0, 0, 0.12) !important;
     }
 }
+
+/* ─── QR Scanner Theme Support ────────────────────────────────────────── */
+#reader button {
+    background: var(--teal-strong) !important;
+    color: white !important;
+    border: none !important;
+    border-radius: 8px !important;
+    padding: 6px 14px !important;
+    font-size: 13px !important;
+    font-weight: 600 !important;
+    cursor: pointer !important;
+    transition: all 0.2s ease !important;
+}
+
+#reader button:hover {
+    filter: brightness(1.1) !important;
+    box-shadow: 0 0 12px var(--teal-glow) !important;
+}
+
+#reader select {
+    background: var(--bg-secondary) !important;
+    color: var(--text-primary) !important;
+    border: 1px solid var(--border-color) !important;
+    border-radius: 6px !important;
+    padding: 4px 8px !important;
+    font-size: 13px !important;
+}
+
+#reader__status_span {
+    color: var(--text-muted) !important;
+    font-size: 12px !important;
+}
+
+#reader__dashboard_section_csr button {
+    margin: 5px !important;
+}

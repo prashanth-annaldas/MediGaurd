@@ -11,16 +11,16 @@ const navItems = [
     { to: '/alerts', label: 'Alert Center', requiresSelectedHospital: true },
     { to: '/forecast', label: 'AI Forecast', requiresSelectedHospital: true },
     { to: '/trends', label: 'Trends', requiresSelectedHospital: true },
-    { to: '/gemini', label: 'Gemini AI', alwaysShowForUser: true },
     { to: '/hospitals', label: 'Hospital Search', userOnly: true, alwaysShowForUser: true },
     { to: '/admin', label: 'Admin', adminOnly: true },
-    { to: '/schedules', label: 'Schedules', staffOnly: true },
     { to: '/appointments', label: 'Appointments', staffOnly: true },
     { to: '/beds', label: 'Bed Management', staffOnly: true },
     { to: '/patients', label: 'Register Patient', userOnly: true, alwaysShowForUser: true },
     { to: '/appointments', label: 'Appointments', userOnly: true, alwaysShowForUser: true },
     { to: '/predict', label: 'Disease Prediction', userOnly: true, alwaysShowForUser: true },
     { to: '/appointments', label: 'Prescriptions', doctorOnly: true },
+    { to: '/history', label: 'Appointment History', doctorOnly: true },
+    { to: '/gemini', label: 'Gemini AI', alwaysShowForUser: true },
 ]
 
 export default function Sidebar() {

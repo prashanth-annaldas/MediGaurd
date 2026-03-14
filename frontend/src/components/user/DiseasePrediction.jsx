@@ -102,12 +102,13 @@ export default function DiseasePrediction() {
                                     selectedSymptoms.map(s => (
                                         <span 
                                             key={s} 
-                                            className="inline-flex items-center gap-2 px-3 py-1.5 bg-teal-500/10 text-teal-400 border border-teal-500/20 rounded-lg text-sm font-medium animate-in zoom-in-95 duration-200"
+                                            className="inline-flex items-center gap-2 px-3 py-1.5 rounded-lg text-sm font-medium animate-in zoom-in-95 duration-200"
+                                            style={{ background: 'var(--bg-card)', color: 'var(--text-primary)', border: '1px solid var(--border-color)' }}
                                         >
                                             {s}
                                             <X 
                                                 size={14} 
-                                                className="cursor-pointer hover:text-white transition-colors" 
+                                                className="cursor-pointer hover:text-red-400 transition-colors" 
                                                 onClick={() => toggleSymptom(s)}
                                             />
                                         </span>

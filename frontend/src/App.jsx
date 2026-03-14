@@ -9,13 +9,13 @@ import TrendAnalytics from './components/trends/TrendAnalytics'
 import GeminiChat from './components/gemini/GeminiChat'
 import AdminPanel from './components/admin/AdminPanel'
 import StaffDataPage from './components/admin/StaffDataPage'
-import SchedulePage from './components/admin/SchedulePage'
 import Login from './components/auth/Login'
 import Register from './components/auth/Register'
 import StressIndexView from './components/public/StressIndexView'
 import HospitalSearch from './components/public/HospitalSearch'
 import Appointments from './components/staff/Appointments'
 import DoctorAppointments from './components/doctor/DoctorAppointments'
+import DoctorAppointmentHistory from './components/doctor/DoctorAppointmentHistory'
 import PatientRegistration from './components/staff/PatientRegistration'
 import DoctorPrescription from './components/doctor/DoctorPrescription'
 import UserAppointments from './components/user/UserAppointments'
@@ -87,7 +87,6 @@ export default function App() {
             <Route path="/admin/gemini" element={<ProtectedRoute allowedRoles={['ADMIN']}><GeminiChat /></ProtectedRoute>} />
             <Route path="/admin/appointments" element={<ProtectedRoute allowedRoles={['ADMIN']}><Appointments /></ProtectedRoute>} />
             <Route path="/admin/beds" element={<ProtectedRoute allowedRoles={['ADMIN']}><BedManagement /></ProtectedRoute>} />
-            <Route path="/admin/schedules" element={<ProtectedRoute allowedRoles={['ADMIN']}><HospitalRequiredRoute><SchedulePage /></HospitalRequiredRoute></ProtectedRoute>} />
 
             {/* Staff Routes */}
             <Route path="/staff/dashboard" element={<ProtectedRoute allowedRoles={['STAFF']}><HospitalRequiredRoute><SmartDashboard /></HospitalRequiredRoute></ProtectedRoute>} />
@@ -98,7 +97,6 @@ export default function App() {
             <Route path="/staff/gemini" element={<ProtectedRoute allowedRoles={['STAFF']}><GeminiChat /></ProtectedRoute>} />
             <Route path="/staff/appointments" element={<ProtectedRoute allowedRoles={['STAFF']}><Appointments /></ProtectedRoute>} />
             <Route path="/staff/beds" element={<ProtectedRoute allowedRoles={['STAFF']}><BedManagement /></ProtectedRoute>} />
-            <Route path="/staff/schedules" element={<ProtectedRoute allowedRoles={['STAFF']}><HospitalRequiredRoute><SchedulePage /></HospitalRequiredRoute></ProtectedRoute>} />
 
             {/* Doctor Routes */}
             <Route path="/doctor/dashboard" element={<ProtectedRoute allowedRoles={['DOCTOR']}><HospitalRequiredRoute><SmartDashboard /></HospitalRequiredRoute></ProtectedRoute>} />
@@ -108,6 +106,7 @@ export default function App() {
             <Route path="/doctor/forecast" element={<ProtectedRoute allowedRoles={['DOCTOR']}><HospitalRequiredRoute><ForecastDashboard /></HospitalRequiredRoute></ProtectedRoute>} />
             <Route path="/doctor/trends" element={<ProtectedRoute allowedRoles={['DOCTOR']}><HospitalRequiredRoute><TrendAnalytics /></HospitalRequiredRoute></ProtectedRoute>} />
             <Route path="/doctor/gemini" element={<ProtectedRoute allowedRoles={['DOCTOR']}><GeminiChat /></ProtectedRoute>} />
+            <Route path="/doctor/history" element={<ProtectedRoute allowedRoles={['DOCTOR']}><DoctorAppointmentHistory /></ProtectedRoute>} />
             <Route path="/doctor/prescription/:appointmentId" element={<ProtectedRoute allowedRoles={['DOCTOR']}><DoctorPrescription /></ProtectedRoute>} />
 
             {/* User Routes */}

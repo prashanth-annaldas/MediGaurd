@@ -308,7 +308,7 @@ export default function BedManagement() {
                         <button
                             onClick={() => setShowScanner(!showScanner)}
                             className="flex items-center gap-2 px-3 py-2 rounded-xl text-xs font-medium transition-all"
-                            style={{ background: 'var(--bg-secondary)', border: '1px solid var(--border-color)', color: 'white', cursor: 'pointer' }}
+                            style={{ background: 'var(--bg-secondary)', border: '1px solid var(--border-color)', color: 'var(--text-primary)', cursor: 'pointer' }}
                         >
                             <QrCode size={13} /> Scan QR
                         </button>

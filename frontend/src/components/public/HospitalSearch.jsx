@@ -78,7 +78,7 @@ const HospitalSearch = () => {
                 <div className="border-b border-gray-200 mb-6"></div>
 
                 {/* Search and Filters */}
-                <div className="bg-white rounded-lg shadow-sm border border-gray-200 p-4 mb-8 flex flex-col md:flex-row gap-4 items-center">
+                <div className="sticky top-0 z-10 bg-white/95 backdrop-blur-md rounded-xl shadow-md border border-gray-200 p-4 mb-8 flex flex-col md:flex-row gap-4 items-center">
                     <div className="relative flex-1 w-full">
                         <Search className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400 w-5 h-5" />
                         <input
