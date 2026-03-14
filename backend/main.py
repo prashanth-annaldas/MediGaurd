@@ -22,7 +22,6 @@ from database import engine, Base, get_db
 import models
 import auth
 import ml_model
-import email_service
 
 load_dotenv()
 
