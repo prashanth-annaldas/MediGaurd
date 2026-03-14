@@ -30,7 +30,7 @@ export default function Landing() {
                             <Activity className="w-6 h-6 text-teal-400" />
                         </div>
                         <span className="text-xl md:text-2xl font-bold tracking-tight text-[var(--text-primary)]">
-                            MedGuard<span className="text-teal-500">AI</span>
+                            MediGuard<span className="text-teal-500">AI</span>
                         </span>
                     </div>
 
@@ -54,7 +54,7 @@ export default function Landing() {
                 {/* Main Content Area */}
                 <main className="z-10 text-center px-4 max-w-4xl pt-20">
                     <h1 className="text-5xl md:text-7xl font-bold tracking-tighter text-[var(--text-primary)] mb-4 mt-8">
-                        <span className="text-teal-500">MedGuard</span> AI
+                        <span className="text-teal-500">MediGuard</span> AI
                     </h1>
 
                     <p className="text-xl md:text-2xl text-[var(--text-muted)] font-medium mb-8">

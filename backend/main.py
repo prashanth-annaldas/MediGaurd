@@ -126,20 +126,38 @@ try:
     GEMINI_API_KEY = os.getenv("GEMINI_API_KEY")
     if GEMINI_API_KEY and not GEMINI_API_KEY.startswith("your_"):
         genai.configure(api_key=GEMINI_API_KEY)
-        # Try newer models explicitly supported by this key
-        models_to_try = ["gemini-2.5-flash", "gemini-2.0-flash", "gemini-3-flash-preview"]
+        
+        # Dynamically discover supported models instead of hardcoding
         gemini_model = None
-        for m_name in models_to_try:
-            try:
+        m_name = None
+        try:
+            # We want to use models that support generateContent
+            available_models = [m.name for m in genai.list_models() if 'generateContent' in m.supported_generation_methods]
+            preferred_order = ["gemini-2.5-flash", "gemini-2.0-flash", "gemini-1.5-flash", "gemini-1.5-pro", "gemini-pro"]
+            
+            for pref in preferred_order:
+                for am in available_models:
+                    if pref in am:
+                        m_name = am
+                        break
+                if m_name:
+                    break
+            
+            # Fallback if no preferred models are available
+            if not m_name and available_models:
+                m_name = available_models[0]
+                
+            if m_name:
                 # Basic initialization - skipping ping check to avoid eating quota at startup
                 gemini_model = genai.GenerativeModel(m_name)
                 print(f"🤖 MedGuard AI: Gemini model {m_name} ready.")
-                break
-            except Exception as e:
-                print(f"DEBUG: Model {m_name} initialization failure: {e}")
-                gemini_model = None
-                continue
-        
+            else:
+                print("⚠️ MedGuard AI: No models supporting 'generateContent' were found.")
+                
+        except Exception as e:
+            print(f"DEBUG: Model dynamic discovery/initialization failure: {e}")
+            gemini_model = None
+            
         GEMINI_AVAILABLE = gemini_model is not None
     else:
         GEMINI_AVAILABLE = False
