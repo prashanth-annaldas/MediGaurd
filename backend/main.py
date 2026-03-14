@@ -10,7 +10,7 @@ import random
 import datetime
 import json
 from typing import Optional, List
-from fastapi import FastAPI, HTTPException, Depends, File, Form, UploadFile
+from fastapi import FastAPI, HTTPException, Depends, File, Form, UploadFile, BackgroundTasks
 from fastapi.middleware.cors import CORSMiddleware
 from pydantic import BaseModel
 from dotenv import load_dotenv
@@ -19,6 +19,7 @@ from database import engine, Base, get_db
 import models
 import auth
 import ml_model
+import email_service
 
 load_dotenv()
 
@@ -127,20 +128,38 @@ try:
     GEMINI_API_KEY = os.getenv("GEMINI_API_KEY")
     if GEMINI_API_KEY and not GEMINI_API_KEY.startswith("your_"):
         genai.configure(api_key=GEMINI_API_KEY)
-        # Try newer models explicitly supported by this key
-        models_to_try = ["gemini-2.5-flash", "gemini-2.0-flash", "gemini-3-flash-preview"]
+        
+        # Dynamically discover supported models instead of hardcoding
         gemini_model = None
-        for m_name in models_to_try:
-            try:
+        m_name = None
+        try:
+            # We want to use models that support generateContent
+            available_models = [m.name for m in genai.list_models() if 'generateContent' in m.supported_generation_methods]
+            preferred_order = ["gemini-2.5-flash", "gemini-2.0-flash", "gemini-1.5-flash", "gemini-1.5-pro", "gemini-pro"]
+            
+            for pref in preferred_order:
+                for am in available_models:
+                    if pref in am:
+                        m_name = am
+                        break
+                if m_name:
+                    break
+            
+            # Fallback if no preferred models are available
+            if not m_name and available_models:
+                m_name = available_models[0]
+                
+            if m_name:
                 # Basic initialization - skipping ping check to avoid eating quota at startup
                 gemini_model = genai.GenerativeModel(m_name)
                 print(f"🤖 MedGuard AI: Gemini model {m_name} ready.")
-                break
-            except Exception as e:
-                print(f"DEBUG: Model {m_name} initialization failure: {e}")
-                gemini_model = None
-                continue
-        
+            else:
+                print("⚠️ MedGuard AI: No models supporting 'generateContent' were found.")
+                
+        except Exception as e:
+            print(f"DEBUG: Model dynamic discovery/initialization failure: {e}")
+            gemini_model = None
+            
         GEMINI_AVAILABLE = gemini_model is not None
     else:
         GEMINI_AVAILABLE = False
@@ -1479,7 +1498,7 @@ User Message: "{req.message}"
         }
 
 @app.post("/api/appointments", response_model=AppointmentResponse)
-def create_appointment(data: AppointmentCreate, db: Session = Depends(get_db), current_user: models.User = Depends(auth.get_current_user)):
+def create_appointment(data: AppointmentCreate, background_tasks: BackgroundTasks, db: Session = Depends(get_db), current_user: models.User = Depends(auth.get_current_user)):
     """Book a new appointment."""
     new_app = models.Appointment(
         user_id=current_user.id,
@@ -1494,11 +1513,23 @@ def create_appointment(data: AppointmentCreate, db: Session = Depends(get_db), c
         patient_phone=current_user.email,  # basic fallback if phone is unavailable
         created_at=datetime.datetime.utcnow().isoformat() + "Z"
     )
-    
     try:
         db.add(new_app)
         db.commit()
         db.refresh(new_app)
+
+        # Send email notification asynchronously
+        background_tasks.add_task(
+            email_service.send_appointment_email,
+            patient_name=current_user.name,
+            patient_email=current_user.email,
+            doctor_name=data.doctor_name,
+            appointment_date=data.date,
+            appointment_time=data.time,
+            reason=data.raw_message,
+            appointment_id=new_app.id
+        )
+
         return new_app
     except IntegrityError:
         db.rollback()

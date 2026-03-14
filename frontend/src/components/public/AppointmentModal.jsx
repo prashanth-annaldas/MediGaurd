@@ -13,6 +13,7 @@ export default function AppointmentModal({ hospital, onClose }) {
     const [selectedDoctor, setSelectedDoctor] = useState('');
     const token = useStore(state => state.token);
 
+    const API = import.meta.env.VITE_API_URL || 'https://medigaurd1-fzd9.onrender.com';
     const [availableSlots, setAvailableSlots] = useState([]);
     const [loadingSlots, setLoadingSlots] = useState(false);
 
@@ -21,7 +22,7 @@ export default function AppointmentModal({ hospital, onClose }) {
             const fetchSlots = async () => {
                 setLoadingSlots(true);
                 try {
-                    const res = await fetch(`/api/appointments/slots?hospital_name=${encodeURIComponent(hospital.name)}&doctor_name=${encodeURIComponent(extractedData.doctor_name)}&date=${encodeURIComponent(extractedData.date)}`);
+                    const res = await fetch(`${API}/api/appointments/slots?hospital_name=${encodeURIComponent(hospital.name)}&doctor_name=${encodeURIComponent(extractedData.doctor_name)}&date=${encodeURIComponent(extractedData.date)}`);
                     if (res.ok) {
                         const data = await res.json();
                         setAvailableSlots(data.available_slots || []);
@@ -57,7 +58,7 @@ export default function AppointmentModal({ hospital, onClose }) {
         setIsExtracting(true);
         setError(null);
         try {
-            const res = await fetch(`/api/appointments/extract`, {
+            const res = await fetch(`${API}/api/appointments/extract`, {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
                 body: JSON.stringify({ message })
@@ -87,7 +88,7 @@ export default function AppointmentModal({ hospital, onClose }) {
         setBooking(true);
         setError(null);
         try {
-            const res = await fetch(`/api/appointments`, {
+            const res = await fetch(`${API}/api/appointments`, {
                 method: 'POST',
                 headers: {
                     'Content-Type': 'application/json',

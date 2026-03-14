@@ -12,6 +12,7 @@ export default function DoctorAppointments() {
     const user = useStore(state => state.user);
     const navigate = useNavigate();
 
+    const API = import.meta.env.VITE_API_URL || 'https://medigaurd1-fzd9.onrender.com';
 
     useEffect(() => {
         fetchAppointments();
@@ -21,14 +22,14 @@ export default function DoctorAppointments() {
         if (!token) return;
         setLoading(true);
         try {
-            const res = await fetch(`/api/appointments`, {
+            const res = await fetch(`${API}/api/appointments`, {
                 headers: { 'Authorization': `Bearer ${token}` }
             });
             if (!res.ok) throw new Error('Failed to fetch appointments');
             const data = await res.json();
 
             // Backend already filters by doctor name + hospital — no client-side filter needed
-            // Sort by date/time (most recent first)
+            // Sort by date/time (most recent first
             data.sort((a, b) => new Date(`${b.date}T${b.time}`) - new Date(`${a.date}T${a.time}`));
             setAppointments(data);
         } catch (err) {

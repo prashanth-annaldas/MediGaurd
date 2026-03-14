@@ -35,6 +35,7 @@ export default {
                 'fade-in': 'fadeIn 0.3s ease-in-out',
                 'slide-in': 'slideIn 0.3s ease-out',
                 'glow': 'glow 2s ease-in-out infinite alternate',
+                'spotlight': 'spotlight 2s ease .75s 1 forwards',
             },
             keyframes: {
                 fadeIn: {
@@ -48,6 +49,16 @@ export default {
                 glow: {
                     '0%': { boxShadow: '0 0 5px rgba(20, 184, 166, 0.2)' },
                     '100%': { boxShadow: '0 0 20px rgba(20, 184, 166, 0.6)' },
+                },
+                spotlight: {
+                    "0%": {
+                        opacity: 0,
+                        transform: "translate(-72%, -62%) scale(0.5)",
+                    },
+                    "100%": {
+                        opacity: 1,
+                        transform: "translate(-50%,-40%) scale(1)",
+                    },
                 }
             },
             backdropBlur: {
