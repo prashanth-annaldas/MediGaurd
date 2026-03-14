@@ -5,9 +5,6 @@ from dotenv import load_dotenv
 
 load_dotenv()
 
-EMAIL_USER = os.getenv("EMAIL_USER")
-EMAIL_PASS = os.getenv("EMAIL_PASS")
-
 def send_appointment_email(
     patient_name: str,
     patient_email: str,
@@ -20,6 +17,10 @@ def send_appointment_email(
     """
     Sends an appointment notification email to the doctor securely via Gmail SMTP.
     """
+    # Fetch at runtime to ensure Render environment variables are captured even if set post-deployment
+    EMAIL_USER = os.getenv("EMAIL_USER")
+    EMAIL_PASS = os.getenv("EMAIL_PASS")
+
     # Defensive check: if credentials aren't set, just log and return
     if not EMAIL_USER or not EMAIL_PASS:
         print("⚠️ Email credentials (EMAIL_USER/EMAIL_PASS) are missing. Skipping email notification.")
