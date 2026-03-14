@@ -1,6 +1,5 @@
 import os
-import smtplib
-from email.message import EmailMessage
+import requests
 from dotenv import load_dotenv
 
 load_dotenv()
@@ -15,21 +14,19 @@ def send_appointment_email(
     appointment_id: int
 ):
     """
-    Sends an appointment notification email to the doctor securely via Gmail SMTP.
+    Sends an appointment notification email securely via Brevo's HTTP API.
+    Render allows outbound HTTP traffic (port 443), thus bypassing SMTP blocks.
     """
-    # Fetch at runtime to ensure Render environment variables are captured even if set post-deployment
-    EMAIL_USER = os.getenv("EMAIL_USER")
-    EMAIL_PASS = os.getenv("EMAIL_PASS")
-
-    print(f"DEBUG EMAIL: Checking credentials. User loaded: {bool(EMAIL_USER)}, Pass loaded: {bool(EMAIL_PASS)}", flush=True)
-
+    # Fetch from environment
+    API_KEY = os.getenv("BREVO_API_KEY") 
+    SENDER_EMAIL = os.getenv("EMAIL_USER", "prashanthannaldas@gmail.com") 
+    
     # Defensive check: if credentials aren't set, just log and return
-    if not EMAIL_USER or not EMAIL_PASS:
-        print("⚠️ Email credentials (EMAIL_USER/EMAIL_PASS) are missing or empty. Skipping email notification.", flush=True)
+    if not API_KEY:
+        print("⚠️ Email API key (BREVO_API_KEY) is missing. Skipping email notification. Sign up at brevo.com to get a free API key.", flush=True)
         return False
 
-    EMAIL_USER = EMAIL_USER.strip()
-    EMAIL_PASS = EMAIL_PASS.strip()
+    API_KEY = API_KEY.strip()
 
     # The doctor's receiver email as per requirement
     receiver_email = "prashanthannaldas453@gmail.com"
@@ -50,26 +47,42 @@ Appointment ID: {appointment_id}
 
 Please login to MedGuard to view the full appointment details.
 
-Regards
+Regards,
 MedGuard System
 """
 
-    msg = EmailMessage()
-    msg.set_content(body)
-    msg["Subject"] = subject
-    msg["From"] = EMAIL_USER
-    msg["To"] = receiver_email
+    url = "https://api.brevo.com/v3/smtp/email"
+    headers = {
+        "accept": "application/json",
+        "api-key": API_KEY,
+        "content-type": "application/json"
+    }
+    
+    payload = {
+        "sender": {
+            "name": "MedGuard System",
+            "email": SENDER_EMAIL
+        },
+        "to": [
+            {
+                "email": receiver_email,
+                "name": "Doctor Prashanth"
+            }
+        ],
+        "subject": subject,
+        "textContent": body
+    }
 
     try:
-        print(f"DEBUG EMAIL: Attempting to connect to smtp.gmail.com:587 for {EMAIL_USER}...", flush=True)
-        # Use SMTP with STARTTLS for port 587 (Render firewall compatible)
-        with smtplib.SMTP("smtp.gmail.com", 587) as server:
-            server.ehlo()
-            server.starttls()
-            server.login(EMAIL_USER, EMAIL_PASS)
-            server.send_message(msg)
-        print(f"✅ Appointment email sent to {receiver_email} for Appointment #{appointment_id}", flush=True)
-        return True
+        print(f"DEBUG EMAIL: Sending via Brevo HTTP API to {receiver_email}...", flush=True)
+        response = requests.post(url, json=payload, headers=headers)
+        
+        if response.status_code in [200, 201]:
+            print(f"✅ Appointment email sent to {receiver_email} for Appointment #{appointment_id}", flush=True)
+            return True
+        else:
+            print(f"❌ Failed to send appointment email. Status: {response.status_code}, Response: {response.text}", flush=True)
+            return False
     except Exception as e:
-        print(f"❌ Failed to send appointment email: {e}", flush=True)
+        print(f"❌ Exception in HTTP email service: {e}", flush=True)
         return False
