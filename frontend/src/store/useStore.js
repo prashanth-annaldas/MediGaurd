@@ -18,21 +18,21 @@ const useStore = create((set, get) => ({
     sidebarCollapsed: false,
 
     // ── User Auth ───────────────────────────────────────────────────────────
-    user: JSON.parse(localStorage.getItem('user')) || null,
-    token: localStorage.getItem('token') || null,
+    user: JSON.parse(sessionStorage.getItem('user')) || null,
+    token: sessionStorage.getItem('token') || null,
     setUser: (user, token) => {
         if (user) {
-            localStorage.setItem('user', JSON.stringify(user));
-            localStorage.setItem('token', token);
+            sessionStorage.setItem('user', JSON.stringify(user));
+            sessionStorage.setItem('token', token);
         } else {
-            localStorage.removeItem('user');
-            localStorage.removeItem('token');
+            sessionStorage.removeItem('user');
+            sessionStorage.removeItem('token');
         }
         set({ user, token });
     },
     logout: () => {
-        localStorage.removeItem('user');
-        localStorage.removeItem('token');
+        sessionStorage.removeItem('user');
+        sessionStorage.removeItem('token');
         set({ user: null, token: null });
     },
 
@@ -292,18 +292,18 @@ const useStore = create((set, get) => ({
     toggleSidebar: () => set(state => ({ sidebarCollapsed: !state.sidebarCollapsed })),
 
     // ── Selected Hospital (User View) ───────────────────────────────────────
-    selectedHospital: JSON.parse(localStorage.getItem('selectedHospital')) || null,
+    selectedHospital: JSON.parse(sessionStorage.getItem('selectedHospital')) || null,
     setSelectedHospital: (hospital) => {
-        localStorage.setItem('selectedHospital', JSON.stringify(hospital));
+        sessionStorage.setItem('selectedHospital', JSON.stringify(hospital));
         set({ selectedHospital: hospital });
     },
     clearSelectedHospital: () => {
-        localStorage.removeItem('selectedHospital');
+        sessionStorage.removeItem('selectedHospital');
         set({ selectedHospital: null });
     },
 
     // ── Theme ───────────────────────────────────────────────────────────────
-    theme: localStorage.getItem('theme') || 'dark',
+    theme: sessionStorage.getItem('theme') || 'dark',
     toggleTheme: () => set(state => {
         const newTheme = state.theme === 'dark' ? 'light' : 'dark';
         localStorage.setItem('theme', newTheme);

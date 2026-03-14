@@ -3,6 +3,8 @@ import { Loader2, RefreshCw, Plus, QrCode, User, X } from 'lucide-react'
 import Layout from '../layout/Layout'
 import useStore from '../../store/useStore'
 import QRCode from 'react-qr-code'
+import QRScanner from '../ui/QRScanner'
+import { useNavigate } from 'react-router-dom'
 
 const API = import.meta.env.VITE_API_URL || 'https://medigaurd1-fzd9.onrender.com'
 
@@ -204,6 +206,18 @@ export default function BedManagement() {
     const [seeding, setSeeding] = useState(false)
     const [filter, setFilter] = useState('all')
     const [statusFilter, setStatusFilter] = useState('all')
+    const [showScanner, setShowScanner] = useState(false)
+    const navigate = useNavigate()
+
+    const handleScanSuccess = (decodedText) => {
+        const bedMatch = decodedText.match(/\/bed\/(.+)$/)
+        if (bedMatch) {
+            navigate(`/bed/${bedMatch[1]}`)
+        } else {
+            addToast({ type: 'error', title: 'Invalid QR', message: 'This is not a valid bed QR code.' })
+        }
+        setShowScanner(false)
+    }
 
     const fetchBeds = useCallback(async () => {
         setError(null)
@@ -292,6 +306,13 @@ export default function BedManagement() {
                     </div>
                     <div className="flex items-center gap-3">
                         <button
+                            onClick={() => setShowScanner(!showScanner)}
+                            className="flex items-center gap-2 px-3 py-2 rounded-xl text-xs font-medium transition-all"
+                            style={{ background: 'var(--bg-secondary)', border: '1px solid var(--border-color)', color: 'white', cursor: 'pointer' }}
+                        >
+                            <QrCode size={13} /> Scan QR
+                        </button>
+                        <button
                             onClick={fetchBeds}
                             className="flex items-center gap-2 px-3 py-2 rounded-xl text-xs font-medium transition-all"
                             style={{ background: 'var(--bg-card)', border: '1px solid var(--border-color)', color: 'var(--text-secondary)', cursor: 'pointer' }}
@@ -316,6 +337,19 @@ export default function BedManagement() {
                         )}
                     </div>
                 </div>
+
+                {/* Built-in Scanner */}
+                {showScanner && (
+                    <div className="rounded-xl overflow-hidden glass-card p-4" style={{ background: 'var(--bg-secondary)', border: '1px solid var(--border-color)' }}>
+                        <div className="flex justify-between items-center mb-4 border-b pb-2" style={{ borderColor: 'var(--border-color)' }}>
+                            <h3 className="font-bold text-[var(--text-primary)]">Scan Bed QR Code</h3>
+                            <button onClick={() => setShowScanner(false)} className="text-[var(--text-muted)] hover:text-[var(--text-primary)] transition-colors">
+                                <X size={20} />
+                            </button>
+                        </div>
+                        <QRScanner onScanSuccess={handleScanSuccess} />
+                    </div>
+                )}
 
                 {/* Stats — only show when beds exist */}
                 {beds.length > 0 && (
