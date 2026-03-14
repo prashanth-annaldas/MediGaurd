@@ -1,4 +1,4 @@
-from sqlalchemy import Column, Integer, String, Float, ForeignKey
+from sqlalchemy import Column, Integer, String, Float, ForeignKey, UniqueConstraint
 from database import Base
 
 class User(Base):
@@ -74,6 +74,9 @@ class Hospital(Base):
 
 class Appointment(Base):
     __tablename__ = "appointments"
+    __table_args__ = (
+        UniqueConstraint('hospital_name', 'doctor_name', 'date', 'time', name='uix_hospital_doctor_date_time'),
+    )
 
     id = Column(Integer, primary_key=True, index=True)
     user_id = Column(Integer, index=True, nullable=True)
@@ -150,3 +153,14 @@ class Bed(Base):
     admitted_at = Column(String, nullable=True)         # ISO timestamp
     qr_code = Column(String, unique=True, index=True)  # Unique QR identifier
 
+class DoctorSchedule(Base):
+    __tablename__ = "doctor_schedules"
+
+    id = Column(Integer, primary_key=True, index=True)
+    hospital_name = Column(String, index=True)
+    doctor_name = Column(String, index=True)
+    day_of_week = Column(String) # e.g. "Monday", "Tuesday", etc.
+    start_time = Column(String, nullable=True) # e.g. "09:00", nullable if off
+    end_time = Column(String, nullable=True) # e.g. "17:00"
+    slot_duration = Column(Integer, default=15) # in minutes
+    is_off_day = Column(Integer, default=0) # 0 = working, 1 = off

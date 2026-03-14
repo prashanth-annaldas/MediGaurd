@@ -46,6 +46,7 @@ app.include_router(auth.router)
 # Seed demo users on startup
 from sqlalchemy.orm import Session
 from sqlalchemy import func
+from sqlalchemy.exc import IntegrityError
 def seed_users():
     db = next(get_db())
     if not db.query(models.User).first():
@@ -398,29 +399,7 @@ def admit_patient(data: QRScanData, db: Session = Depends(get_db), current_user:
     
     return {"message": "Patient admitted successfully", "available_beds": hospital.available_beds, "hospital": hospital_name}
 
-@app.get("/api/appointments/{appt_id}")
-def get_appointment_details(appt_id: int, db: Session = Depends(get_db), current_user: models.User = Depends(auth.get_current_user)):
-    """Fetch specific appointment details including patient info if available."""
-    appt = db.query(models.Appointment).filter(models.Appointment.id == appt_id).first()
-    if not appt:
-        raise HTTPException(status_code=404, detail="Appointment not found")
-    
-    # Enrich with Patient table data
-    patient = db.query(models.Patient).filter(models.Patient.full_name == appt.patient_name).first()
-    
-    return {
-        "id": appt.id,
-        "patient_name": appt.patient_name,
-        "patient_phone": appt.patient_phone,
-        "patient_age": patient.age if patient else None,
-        "patient_gender": patient.gender if patient else None,
-        "date": appt.date,
-        "time": appt.time,
-        "specialization": appt.specialization,
-        "doctor_name": appt.doctor_name,
-        "status": appt.status,
-        "created_at": appt.created_at
-    }
+
 
 @app.post("/api/hospitals/discharge")
 def discharge_patient(data: QRScanData, db: Session = Depends(get_db), current_user: models.User = Depends(auth.get_current_staff_user)):
@@ -1272,6 +1251,106 @@ class HospitalHistoryRecord(BaseModel):
 
 # ─── Appointment Booking ───────────────────────────────────────────────────
 
+class DoctorScheduleCreate(BaseModel):
+    doctor_name: str
+    day_of_week: str
+    start_time: Optional[str] = None
+    end_time: Optional[str] = None
+    slot_duration: int = 15
+    is_off_day: int = 0
+
+@app.get("/api/doctors/schedules/{hospital_name}")
+def get_doctor_schedules(hospital_name: str, db: Session = Depends(get_db)):
+    schedules = db.query(models.DoctorSchedule).filter(models.DoctorSchedule.hospital_name == hospital_name).all()
+    return schedules
+
+@app.post("/api/doctors/schedules")
+def save_doctor_schedule(data: DoctorScheduleCreate, db: Session = Depends(get_db), current_user: models.User = Depends(auth.get_current_staff_user)):
+    # Find existing or create new
+    sched = db.query(models.DoctorSchedule).filter(
+        models.DoctorSchedule.hospital_name == current_user.hospital_name,
+        models.DoctorSchedule.doctor_name == data.doctor_name,
+        models.DoctorSchedule.day_of_week == data.day_of_week
+    ).first()
+
+    if sched:
+        sched.start_time = data.start_time
+        sched.end_time = data.end_time
+        sched.slot_duration = data.slot_duration
+        sched.is_off_day = data.is_off_day
+    else:
+        sched = models.DoctorSchedule(
+            hospital_name=current_user.hospital_name,
+            doctor_name=data.doctor_name,
+            day_of_week=data.day_of_week,
+            start_time=data.start_time,
+            end_time=data.end_time,
+            slot_duration=data.slot_duration,
+            is_off_day=data.is_off_day
+        )
+        db.add(sched)
+    
+    db.commit()
+    db.refresh(sched)
+    return {"message": "Schedule saved successfully", "schedule": sched}
+
+@app.get("/api/appointments/slots")
+def get_appointment_slots(hospital_name: str, doctor_name: str, date: str, db: Session = Depends(get_db)):
+    """Generate 15-min slots for a given doctor on a given date."""
+    try:
+        dt = datetime.datetime.strptime(date, "%Y-%m-%d")
+    except ValueError:
+        raise HTTPException(status_code=400, detail="Invalid date format. Use YYYY-MM-DD")
+        
+    day_name = dt.strftime("%A")
+    sched = db.query(models.DoctorSchedule).filter(
+        models.DoctorSchedule.hospital_name == hospital_name,
+        models.DoctorSchedule.doctor_name == doctor_name,
+        models.DoctorSchedule.day_of_week == day_name
+    ).first()
+
+    if not sched or sched.is_off_day or not sched.start_time or not sched.end_time:
+        # Default fallback if no schedule exists
+        start_hour = 9
+        end_hour = 17
+        slot_dur = 15
+    else:
+        try:
+            sh, sm = map(int, sched.start_time.split(":"))
+            eh, em = map(int, sched.end_time.split(":"))
+            start_hour = sh + sm/60.0
+            end_hour = eh + em/60.0
+            slot_dur = sched.slot_duration
+        except:
+            start_hour = 9
+            end_hour = 17
+            slot_dur = 15
+
+    # Generate all possible slots
+    slots = []
+    current_time = start_hour * 60 # in minutes
+    end_time = end_hour * 60
+    
+    while current_time + slot_dur <= end_time:
+        h = int(current_time // 60)
+        m = int(current_time % 60)
+        slots.append(f"{h:02d}:{m:02d}")
+        current_time += slot_dur
+
+    # Fetch existing appointments to block them
+    existing_appts = db.query(models.Appointment.time).filter(
+        models.Appointment.hospital_name == hospital_name,
+        models.Appointment.doctor_name == doctor_name,
+        models.Appointment.date == date,
+        models.Appointment.status != "CANCELLED"
+    ).all()
+    
+    booked_times = {appt.time for appt in existing_appts}
+    
+    available_slots = [s for s in slots if s not in booked_times]
+    
+    return {"available_slots": available_slots, "booked": list(booked_times)}
+
 class AppointmentExtractRequest(BaseModel):
     message: str
 
@@ -1412,23 +1491,27 @@ def create_appointment(data: AppointmentCreate, background_tasks: BackgroundTask
         patient_phone=current_user.email,  # basic fallback if phone is unavailable
         created_at=datetime.datetime.utcnow().isoformat() + "Z"
     )
-    db.add(new_app)
-    db.commit()
-    db.refresh(new_app)
-    
-    # Send email notification asynchronously
-    background_tasks.add_task(
-        email_service.send_appointment_email,
-        patient_name=current_user.name,
-        patient_email=current_user.email,
-        doctor_name=data.doctor_name,
-        appointment_date=data.date,
-        appointment_time=data.time,
-        reason=data.raw_message,
-        appointment_id=new_app.id
-    )
-    
-    return new_app
+    try:
+        db.add(new_app)
+        db.commit()
+        db.refresh(new_app)
+
+        # Send email notification asynchronously
+        background_tasks.add_task(
+            email_service.send_appointment_email,
+            patient_name=current_user.name,
+            patient_email=current_user.email,
+            doctor_name=data.doctor_name,
+            appointment_date=data.date,
+            appointment_time=data.time,
+            reason=data.raw_message,
+            appointment_id=new_app.id
+        )
+
+        return new_app
+    except IntegrityError:
+        db.rollback()
+        raise HTTPException(status_code=400, detail="Slot already booked! Please select a different time.")
 
 @app.get("/api/appointments", response_model=List[AppointmentResponse])
 def get_appointments(db: Session = Depends(get_db), current_user: models.User = Depends(auth.get_current_user)):

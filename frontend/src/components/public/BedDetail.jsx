@@ -28,7 +28,7 @@ export default function BedDetail() {
     useEffect(() => { fetchBed() }, [fetchBed])
 
     const handleToggle = async () => {
-        const token = localStorage.getItem('token')
+        const token = sessionStorage.getItem('token')
         if (!token) {
             setActionMsg('⚠️ Please log in as staff to perform this action.')
             return
