@@ -21,10 +21,15 @@ def send_appointment_email(
     EMAIL_USER = os.getenv("EMAIL_USER")
     EMAIL_PASS = os.getenv("EMAIL_PASS")
 
+    print(f"DEBUG EMAIL: Checking credentials. User loaded: {bool(EMAIL_USER)}, Pass loaded: {bool(EMAIL_PASS)}", flush=True)
+
     # Defensive check: if credentials aren't set, just log and return
     if not EMAIL_USER or not EMAIL_PASS:
-        print("⚠️ Email credentials (EMAIL_USER/EMAIL_PASS) are missing. Skipping email notification.")
+        print("⚠️ Email credentials (EMAIL_USER/EMAIL_PASS) are missing or empty. Skipping email notification.", flush=True)
         return False
+
+    EMAIL_USER = EMAIL_USER.strip()
+    EMAIL_PASS = EMAIL_PASS.strip()
 
     # The doctor's receiver email as per requirement
     receiver_email = "prashanthannaldas453@gmail.com"
@@ -56,12 +61,13 @@ MedGuard System
     msg["To"] = receiver_email
 
     try:
+        print(f"DEBUG EMAIL: Attempting to connect to smtp.gmail.com:465 for {EMAIL_USER}...", flush=True)
         # Use SMTP_SSL for port 465 (secure connection)
         with smtplib.SMTP_SSL("smtp.gmail.com", 465) as server:
             server.login(EMAIL_USER, EMAIL_PASS)
             server.send_message(msg)
-        print(f"✅ Appointment email sent to {receiver_email} for Appointment #{appointment_id}")
+        print(f"✅ Appointment email sent to {receiver_email} for Appointment #{appointment_id}", flush=True)
         return True
     except Exception as e:
-        print(f"❌ Failed to send appointment email: {e}")
+        print(f"❌ Failed to send appointment email: {e}", flush=True)
         return False
