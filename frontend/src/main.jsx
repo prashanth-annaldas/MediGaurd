@@ -8,7 +8,7 @@ import { initFirebase } from './services/firebase'
 // Initialize Firebase (gracefully degrades if not configured)
 initFirebase()
 
-const savedTheme = localStorage.getItem('theme') || 'dark';
+const savedTheme = localStorage.getItem('theme') || 'light';
 document.documentElement.setAttribute('data-theme', savedTheme);
 
 ReactDOM.createRoot(document.getElementById('root')).render(

@@ -50,7 +50,7 @@ body {
 }
 
 body {
-    background-color: var(--bg-primary);
+    background-color: #ffffff !important;
     color: var(--text-primary);
     font-family: 'Inter', system-ui, sans-serif;
     -webkit-font-smoothing: antialiased;
@@ -366,51 +366,13 @@ body {
 
 :root:not([data-theme="light"]) {
 
-    /* ── Text Colors ──────────────────────────────────────────────────────── */
-    /* Dark text → light text */
-    .text-gray-900,
-    .text-slate-900 {
-        color: #f1f5f9 !important;
-    }
-
-    .text-gray-800,
-    .text-slate-800 {
-        color: #e2e8f0 !important;
-    }
-
-    .text-gray-700,
-    .text-slate-700 {
-        color: #cbd5e1 !important;
-    }
-
-    .text-gray-600,
-    .text-slate-600 {
-        color: #94a3b8 !important;
-    }
-
-    .text-gray-500,
-    .text-slate-500 {
-        color: #64748b !important;
-    }
-
-    .text-gray-400,
-    .text-slate-400 {
-        color: #94a3b8 !important;
-    }
-
-    .text-black {
-        color: #f1f5f9 !important;
-    }
+    /* REMOVED OVERRIDES TO FIX VISIBILITY ON WHITE PAGE */
 
     /* ── Background Colors ────────────────────────────────────────────────── */
     /* White / light surfaces → dark surfaces */
-    .bg-white {
-        background-color: rgba(10, 22, 40, 0.85) !important;
-    }
+    /* REMOVED OVERRIDE TO ALLOW WHITE PAGE */
 
-    .bg-gray-50 {
-        background-color: rgba(10, 22, 40, 0.6) !important;
-    }
+    /* REMOVED OVERRIDE */
 
     .bg-gray-100 {
         background-color: rgba(13, 30, 54, 0.8) !important;
@@ -631,25 +593,7 @@ body {
         border-color: rgba(45, 212, 191, 0.2) !important;
     }
 
-    /* ── Ensure all generic paragraph/heading/span text is readable ────── */
-    h1,
-    h2,
-    h3,
-    h4,
-    h5,
-    h6 {
-        color: var(--text-primary);
-    }
-
-    p,
-    span,
-    label,
-    td,
-    th,
-    li,
-    a {
-        color: inherit;
-    }
+    /* REMOVED OVERRIDES TO FIX VISIBILITY */
 }
 
 /* ─── Light Theme Reinforcements ─────────────────────────────────────────── */
