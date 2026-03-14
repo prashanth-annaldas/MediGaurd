@@ -95,7 +95,7 @@ export default function DiseasePrediction() {
                             <label className="block text-sm font-medium text-[var(--text-secondary)] mb-3">
                                 Your Selected Symptoms ({selectedSymptoms.length})
                             </label>
-                            <div className="flex flex-wrap gap-2 min-h-[50px] p-4 bg-navy-900/30 rounded-2xl border border-navy-700/50">
+                            <div className="flex flex-wrap gap-2 min-h-[50px] p-4 bg-[var(--bg-secondary)] rounded-2xl border border-[var(--border-color)]">
                                 {selectedSymptoms.length === 0 ? (
                                     <p className="text-gray-600 text-sm italic py-1">No symptoms selected yet. Use the search below to add symptoms.</p>
                                 ) : (
@@ -138,7 +138,7 @@ export default function DiseasePrediction() {
 
                             {/* Dropdown Suggestions */}
                             {searchQuery && filteredSymptoms.length > 0 && (
-                                <div className="absolute z-10 w-full mt-2 bg-navy-900 border border-navy-700 rounded-2xl shadow-2xl overflow-hidden animate-in fade-in slide-in-from-top-2 duration-200">
+                                <div className="absolute z-10 w-full mt-2 bg-[var(--bg-card)] border border-[var(--border-color)] rounded-2xl shadow-2xl overflow-hidden animate-in fade-in slide-in-from-top-2 duration-200">
                                     {filteredSymptoms.map(s => (
                                         <div 
                                             key={s}
@@ -152,7 +152,7 @@ export default function DiseasePrediction() {
                                 </div>
                             )}
                             {searchQuery && filteredSymptoms.length === 0 && (
-                                <div className="absolute z-10 w-full mt-2 bg-navy-900 border border-navy-700 rounded-2xl p-4 text-[var(--text-muted)] text-sm shadow-2xl animate-in fade-in slide-in-from-top-2 duration-200">
+                                <div className="absolute z-10 w-full mt-2 bg-[var(--bg-card)] border border-[var(--border-color)] rounded-2xl p-4 text-[var(--text-muted)] text-sm shadow-2xl animate-in fade-in slide-in-from-top-2 duration-200">
                                     No matching symptoms found in our medical database.
                                 </div>
                             )}
@@ -168,7 +168,7 @@ export default function DiseasePrediction() {
                                             <button
                                                 key={s}
                                                 onClick={() => toggleSymptom(s)}
-                                                className="px-3 py-1 bg-white/5 hover:bg-white/10 border border-white/10 rounded-full text-xs text-[var(--text-secondary)] transition-all hover:border-teal-500/30"
+                                                className="px-3 py-1 bg-[var(--bg-secondary)] hover:bg-[var(--border-color)] border border-[var(--border-color)] rounded-full text-xs text-[var(--text-secondary)] hover:text-[var(--text-primary)] transition-all hover:border-teal-500/30"
                                             >
                                                 + {s}
                                             </button>
@@ -201,9 +201,9 @@ export default function DiseasePrediction() {
                                 <CheckCircle className="w-8 h-8" />
                                 <h2 className="text-2xl font-bold">Prediction Result</h2>
                             </div>
-                            <div className="bg-navy-900/50 p-6 rounded-xl border border-teal-500/20">
+                            <div className="bg-[var(--bg-secondary)] p-6 rounded-xl border border-[var(--border-color)]">
                                 <p className="text-[var(--text-muted)] text-sm uppercase tracking-widest mb-1">Most Likely Condition</p>
-                                <p className="text-4xl font-black text-white">{prediction}</p>
+                                <p className="text-4xl font-black text-[var(--text-primary)]">{prediction}</p>
                             </div>
                             <div className="mt-6 p-4 bg-amber-500/10 border border-amber-500/20 rounded-xl flex gap-3 text-amber-500 text-sm">
                                 <AlertCircle className="w-5 h-5 shrink-0" />
