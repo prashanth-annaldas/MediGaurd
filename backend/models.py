@@ -83,7 +83,6 @@ class Appointment(Base):
     hospital_id = Column(Integer, ForeignKey("hospitals.id"), index=True, nullable=True)
     hospital_name = Column(String)
     specialization = Column(String)
-    doctor_id = Column(Integer, nullable=True)
     doctor_name = Column(String, nullable=True)
     date = Column(String) # YYYY-MM-DD
     time = Column(String) # HH:MM (24-hour format)

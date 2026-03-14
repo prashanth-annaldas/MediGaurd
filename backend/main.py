@@ -399,29 +399,7 @@ def admit_patient(data: QRScanData, db: Session = Depends(get_db), current_user:
     
     return {"message": "Patient admitted successfully", "available_beds": hospital.available_beds, "hospital": hospital_name}
 
-@app.get("/api/appointments/{appt_id}")
-def get_appointment_details(appt_id: int, db: Session = Depends(get_db), current_user: models.User = Depends(auth.get_current_user)):
-    """Fetch specific appointment details including patient info if available."""
-    appt = db.query(models.Appointment).filter(models.Appointment.id == appt_id).first()
-    if not appt:
-        raise HTTPException(status_code=404, detail="Appointment not found")
-    
-    # Enrich with Patient table data
-    patient = db.query(models.Patient).filter(models.Patient.full_name == appt.patient_name).first()
-    
-    return {
-        "id": appt.id,
-        "patient_name": appt.patient_name,
-        "patient_phone": appt.patient_phone,
-        "patient_age": patient.age if patient else None,
-        "patient_gender": patient.gender if patient else None,
-        "date": appt.date,
-        "time": appt.time,
-        "specialization": appt.specialization,
-        "doctor_name": appt.doctor_name,
-        "status": appt.status,
-        "created_at": appt.created_at
-    }
+
 
 @app.post("/api/hospitals/discharge")
 def discharge_patient(data: QRScanData, db: Session = Depends(get_db), current_user: models.User = Depends(auth.get_current_staff_user)):
