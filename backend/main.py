@@ -1562,7 +1562,7 @@ User Message: "{req.message}"
         }
 
 @app.post("/api/appointments", response_model=AppointmentResponse)
-def create_appointment(data: AppointmentCreate, background_tasks: BackgroundTasks, db: Session = Depends(get_db), current_user: models.User = Depends(auth.get_current_user)):
+def create_appointment(data: AppointmentCreate, db: Session = Depends(get_db), current_user: models.User = Depends(auth.get_current_user)):
     """Book a new appointment."""
     new_app = models.Appointment(
         user_id=current_user.id,
@@ -1581,18 +1581,6 @@ def create_appointment(data: AppointmentCreate, background_tasks: BackgroundTask
         db.add(new_app)
         db.commit()
         db.refresh(new_app)
-
-        # Send email notification asynchronously
-        background_tasks.add_task(
-            email_service.send_appointment_email,
-            patient_name=current_user.name,
-            patient_email=current_user.email,
-            doctor_name=data.doctor_name,
-            appointment_date=data.date,
-            appointment_time=data.time,
-            reason=data.raw_message,
-            appointment_id=new_app.id
-        )
 
         return new_app
     except IntegrityError:

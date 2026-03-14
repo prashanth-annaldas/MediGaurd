@@ -9,6 +9,7 @@
         "preview": "vite preview"
     },
     "dependencies": {
+        "@emailjs/browser": "^4.4.1",
         "@google/generative-ai": "^0.21.0",
         "@splinetool/react-spline": "^4.1.0",
         "@splinetool/runtime": "^1.12.69",

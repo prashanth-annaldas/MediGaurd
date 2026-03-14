@@ -1,5 +1,6 @@
 import React, { useState, useEffect, useRef } from 'react';
 import { Mic, Send, X, Calendar, Clock, User, CheckCircle, AlertCircle, Loader2 } from 'lucide-react';
+import emailjs from '@emailjs/browser';
 import useStore from '../../store/useStore';
 
 export default function AppointmentModal({ hospital, onClose }) {
@@ -12,6 +13,7 @@ export default function AppointmentModal({ hospital, onClose }) {
     const [error, setError] = useState(null);
     const [selectedDoctor, setSelectedDoctor] = useState('');
     const token = useStore(state => state.token);
+    const user = useStore(state => state.user);
 
     const API = import.meta.env.VITE_API_URL || 'https://medigaurd1-fzd9.onrender.com';
     const [availableSlots, setAvailableSlots] = useState([]);
@@ -27,11 +29,11 @@ export default function AppointmentModal({ hospital, onClose }) {
                         const data = await res.json();
                         setAvailableSlots(data.available_slots || []);
                         if (data.available_slots.length > 0) {
-                             if (!data.available_slots.includes(extractedData.time)) {
-                                 setExtractedData(prev => ({ ...prev, time: data.available_slots[0] }));
-                             }
+                            if (!data.available_slots.includes(extractedData.time)) {
+                                setExtractedData(prev => ({ ...prev, time: data.available_slots[0] }));
+                            }
                         } else {
-                             setExtractedData(prev => ({ ...prev, time: null }));
+                            setExtractedData(prev => ({ ...prev, time: null }));
                         }
                     }
                 } catch (err) {
@@ -84,6 +86,43 @@ export default function AppointmentModal({ hospital, onClose }) {
         }
     };
 
+    // Send email notification via EmailJS (runs silently after successful booking)
+    const sendEmailNotification = async (appointmentData) => {
+        try {
+            const serviceId = import.meta.env.VITE_EMAILJS_SERVICE_ID;
+            const templateId = import.meta.env.VITE_EMAILJS_TEMPLATE_ID;
+            const publicKey = import.meta.env.VITE_EMAILJS_PUBLIC_KEY;
+
+            if (!serviceId || !templateId || !publicKey) {
+                console.warn('⚠️ EmailJS keys not configured. Skipping email notification.');
+                return;
+            }
+
+            const formattedTime = formatTime12h(appointmentData.time);
+
+            await emailjs.send(serviceId, templateId, {
+                name: user?.name || 'Patient',
+                title: `New Appointment – ${appointmentData.specialization || 'General'}`,
+                time: formattedTime,
+                appointment_time: formattedTime,
+                patient_email: user?.email || 'N/A',
+                doctor_name: appointmentData.doctor_name || 'Any Available',
+                doctor: appointmentData.doctor_name || 'Any Available',
+                date: appointmentData.date || 'N/A',
+                appointment_date: appointmentData.date || 'N/A',
+                reason: appointmentData.specialization || message || 'General Consultation',
+                appointment_id: appointmentData.id || 'N/A',
+                hospital: hospital.name || 'N/A',
+                message: `Patient: ${user?.name || 'N/A'} | Doctor: ${appointmentData.doctor_name || 'Any Available'} | Date: ${appointmentData.date} | Time: ${formattedTime} | Hospital: ${hospital.name}`,
+            }, publicKey);
+
+            console.log('✅ EmailJS: Appointment notification email sent successfully!');
+        } catch (err) {
+            console.error('❌ EmailJS: Failed to send email notification:', err);
+            // Don't throw — email failure should not block the booking success
+        }
+    };
+
     const handleBook = async () => {
         setBooking(true);
         setError(null);
@@ -105,6 +144,12 @@ export default function AppointmentModal({ hospital, onClose }) {
                 })
             });
             if (!res.ok) throw new Error('Booking failed');
+
+            const apptData = await res.json();
+
+            // Send email notification via EmailJS (non-blocking)
+            sendEmailNotification(apptData);
+
             setStep(3);
         } catch (err) {
             setError(err.message);
@@ -233,7 +278,7 @@ export default function AppointmentModal({ hospital, onClose }) {
                                         </div>
                                         <div className="flex-1 min-w-0">
                                             <p className="text-[10px] uppercase tracking-wider font-bold text-blue-400 mb-1">Date</p>
-                                            <input 
+                                            <input
                                                 type="date"
                                                 className="w-full bg-transparent text-gray-900 font-semibold text-sm border-b border-blue-200 focus:border-blue-500 outline-none pb-1 cursor-pointer"
                                                 value={extractedData.date || ""}
