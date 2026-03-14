@@ -45,6 +45,7 @@ app.include_router(auth.router)
 # Seed demo users on startup
 from sqlalchemy.orm import Session
 from sqlalchemy import func
+from sqlalchemy.exc import IntegrityError
 def seed_users():
     db = next(get_db())
     if not db.query(models.User).first():
@@ -1253,6 +1254,106 @@ class HospitalHistoryRecord(BaseModel):
 
 # ─── Appointment Booking ───────────────────────────────────────────────────
 
+class DoctorScheduleCreate(BaseModel):
+    doctor_name: str
+    day_of_week: str
+    start_time: Optional[str] = None
+    end_time: Optional[str] = None
+    slot_duration: int = 15
+    is_off_day: int = 0
+
+@app.get("/api/doctors/schedules/{hospital_name}")
+def get_doctor_schedules(hospital_name: str, db: Session = Depends(get_db)):
+    schedules = db.query(models.DoctorSchedule).filter(models.DoctorSchedule.hospital_name == hospital_name).all()
+    return schedules
+
+@app.post("/api/doctors/schedules")
+def save_doctor_schedule(data: DoctorScheduleCreate, db: Session = Depends(get_db), current_user: models.User = Depends(auth.get_current_staff_user)):
+    # Find existing or create new
+    sched = db.query(models.DoctorSchedule).filter(
+        models.DoctorSchedule.hospital_name == current_user.hospital_name,
+        models.DoctorSchedule.doctor_name == data.doctor_name,
+        models.DoctorSchedule.day_of_week == data.day_of_week
+    ).first()
+
+    if sched:
+        sched.start_time = data.start_time
+        sched.end_time = data.end_time
+        sched.slot_duration = data.slot_duration
+        sched.is_off_day = data.is_off_day
+    else:
+        sched = models.DoctorSchedule(
+            hospital_name=current_user.hospital_name,
+            doctor_name=data.doctor_name,
+            day_of_week=data.day_of_week,
+            start_time=data.start_time,
+            end_time=data.end_time,
+            slot_duration=data.slot_duration,
+            is_off_day=data.is_off_day
+        )
+        db.add(sched)
+    
+    db.commit()
+    db.refresh(sched)
+    return {"message": "Schedule saved successfully", "schedule": sched}
+
+@app.get("/api/appointments/slots")
+def get_appointment_slots(hospital_name: str, doctor_name: str, date: str, db: Session = Depends(get_db)):
+    """Generate 15-min slots for a given doctor on a given date."""
+    try:
+        dt = datetime.datetime.strptime(date, "%Y-%m-%d")
+    except ValueError:
+        raise HTTPException(status_code=400, detail="Invalid date format. Use YYYY-MM-DD")
+        
+    day_name = dt.strftime("%A")
+    sched = db.query(models.DoctorSchedule).filter(
+        models.DoctorSchedule.hospital_name == hospital_name,
+        models.DoctorSchedule.doctor_name == doctor_name,
+        models.DoctorSchedule.day_of_week == day_name
+    ).first()
+
+    if not sched or sched.is_off_day or not sched.start_time or not sched.end_time:
+        # Default fallback if no schedule exists
+        start_hour = 9
+        end_hour = 17
+        slot_dur = 15
+    else:
+        try:
+            sh, sm = map(int, sched.start_time.split(":"))
+            eh, em = map(int, sched.end_time.split(":"))
+            start_hour = sh + sm/60.0
+            end_hour = eh + em/60.0
+            slot_dur = sched.slot_duration
+        except:
+            start_hour = 9
+            end_hour = 17
+            slot_dur = 15
+
+    # Generate all possible slots
+    slots = []
+    current_time = start_hour * 60 # in minutes
+    end_time = end_hour * 60
+    
+    while current_time + slot_dur <= end_time:
+        h = int(current_time // 60)
+        m = int(current_time % 60)
+        slots.append(f"{h:02d}:{m:02d}")
+        current_time += slot_dur
+
+    # Fetch existing appointments to block them
+    existing_appts = db.query(models.Appointment.time).filter(
+        models.Appointment.hospital_name == hospital_name,
+        models.Appointment.doctor_name == doctor_name,
+        models.Appointment.date == date,
+        models.Appointment.status != "CANCELLED"
+    ).all()
+    
+    booked_times = {appt.time for appt in existing_appts}
+    
+    available_slots = [s for s in slots if s not in booked_times]
+    
+    return {"available_slots": available_slots, "booked": list(booked_times)}
+
 class AppointmentExtractRequest(BaseModel):
     message: str
 
@@ -1393,10 +1494,15 @@ def create_appointment(data: AppointmentCreate, db: Session = Depends(get_db), c
         patient_phone=current_user.email,  # basic fallback if phone is unavailable
         created_at=datetime.datetime.utcnow().isoformat() + "Z"
     )
-    db.add(new_app)
-    db.commit()
-    db.refresh(new_app)
-    return new_app
+    
+    try:
+        db.add(new_app)
+        db.commit()
+        db.refresh(new_app)
+        return new_app
+    except IntegrityError:
+        db.rollback()
+        raise HTTPException(status_code=400, detail="Slot already booked! Please select a different time.")
 
 @app.get("/api/appointments", response_model=List[AppointmentResponse])
 def get_appointments(db: Session = Depends(get_db), current_user: models.User = Depends(auth.get_current_user)):

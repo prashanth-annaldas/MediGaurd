@@ -13,6 +13,36 @@ export default function AppointmentModal({ hospital, onClose }) {
     const [selectedDoctor, setSelectedDoctor] = useState('');
     const token = useStore(state => state.token);
 
+    const [availableSlots, setAvailableSlots] = useState([]);
+    const [loadingSlots, setLoadingSlots] = useState(false);
+
+    useEffect(() => {
+        if (step === 2 && extractedData?.doctor_name && extractedData?.date && hospital?.name) {
+            const fetchSlots = async () => {
+                setLoadingSlots(true);
+                try {
+                    const res = await fetch(`/api/appointments/slots?hospital_name=${encodeURIComponent(hospital.name)}&doctor_name=${encodeURIComponent(extractedData.doctor_name)}&date=${encodeURIComponent(extractedData.date)}`);
+                    if (res.ok) {
+                        const data = await res.json();
+                        setAvailableSlots(data.available_slots || []);
+                        if (data.available_slots.length > 0) {
+                             if (!data.available_slots.includes(extractedData.time)) {
+                                 setExtractedData(prev => ({ ...prev, time: data.available_slots[0] }));
+                             }
+                        } else {
+                             setExtractedData(prev => ({ ...prev, time: null }));
+                        }
+                    }
+                } catch (err) {
+                    console.error("Failed to fetch slots", err);
+                } finally {
+                    setLoadingSlots(false);
+                }
+            };
+            fetchSlots();
+        }
+    }, [step, extractedData?.doctor_name, extractedData?.date, hospital?.name]);
+
     const formatTime12h = (time24) => {
         if (!time24 || time24 === "null") return "Not specified";
         const [hours, minutes] = time24.split(':');
@@ -195,25 +225,47 @@ export default function AppointmentModal({ hospital, onClose }) {
                                         </select>
                                     </div>
                                 </div>
-                                <div className="grid grid-cols-2 gap-4">
+                                <div className="grid grid-cols-1 gap-4">
                                     <div className="flex items-center gap-4">
-                                        <div className="w-10 h-10 rounded-2xl bg-white shadow-sm flex items-center justify-center text-blue-600 border border-blue-50">
+                                        <div className="w-10 h-10 rounded-2xl bg-white shadow-sm flex items-center justify-center text-blue-600 border border-blue-50 flex-shrink-0">
                                             <Calendar className="w-5 h-5" />
                                         </div>
-                                        <div>
-                                            <p className="text-[10px] uppercase tracking-wider font-bold text-blue-400">Date</p>
-                                            <p className="text-gray-900 font-semibold text-sm">{extractedData.date || "Not specified"}</p>
+                                        <div className="flex-1 min-w-0">
+                                            <p className="text-[10px] uppercase tracking-wider font-bold text-blue-400 mb-1">Date</p>
+                                            <input 
+                                                type="date"
+                                                className="w-full bg-transparent text-gray-900 font-semibold text-sm border-b border-blue-200 focus:border-blue-500 outline-none pb-1 cursor-pointer"
+                                                value={extractedData.date || ""}
+                                                onChange={(e) => setExtractedData({ ...extractedData, date: e.target.value })}
+                                            />
                                         </div>
                                     </div>
-                                    <div className="flex items-center gap-4">
-                                        <div className="w-10 h-10 rounded-2xl bg-white shadow-sm flex items-center justify-center text-blue-600 border border-blue-50">
-                                            <Clock className="w-5 h-5" />
-                                        </div>
-                                        <div>
-                                            <p className="text-[10px] uppercase tracking-wider font-bold text-blue-400">Time</p>
-                                            <p className="text-gray-900 font-semibold text-sm">{formatTime12h(extractedData.time)}</p>
-                                        </div>
+                                </div>
+
+                                <div className="mt-4 border-t border-blue-100/50 pt-4">
+                                    <div className="flex items-center gap-2 mb-3">
+                                        <Clock className="w-4 h-4 text-blue-600" />
+                                        <p className="text-[10px] uppercase tracking-wider font-bold text-blue-400">Available Time Slots</p>
                                     </div>
+                                    {loadingSlots ? (
+                                        <div className="flex items-center justify-center gap-2 text-sm text-gray-500 py-6">
+                                            <Loader2 className="w-4 h-4 animate-spin text-blue-500" /> Fetching available slots...
+                                        </div>
+                                    ) : availableSlots.length === 0 ? (
+                                        <p className="text-sm text-red-500 font-semibold bg-red-50 p-3 rounded-xl border border-red-100 text-center">No available slots for this doctor on this date.</p>
+                                    ) : (
+                                        <div className="grid grid-cols-4 gap-2 max-h-40 overflow-y-auto pr-1">
+                                            {availableSlots.map(slot => (
+                                                <button
+                                                    key={slot}
+                                                    onClick={() => setExtractedData({ ...extractedData, time: slot })}
+                                                    className={`py-2 px-1 rounded-xl text-xs font-bold transition-all border ${extractedData.time === slot ? 'bg-blue-600 text-white border-blue-600 shadow-md ring-2 ring-blue-300 ring-offset-1' : 'bg-white text-gray-700 border-gray-200 hover:border-blue-400 hover:text-blue-600'}`}
+                                                >
+                                                    {formatTime12h(slot)}
+                                                </button>
+                                            ))}
+                                        </div>
+                                    )}
                                 </div>
                             </div>
 
@@ -233,8 +285,8 @@ export default function AppointmentModal({ hospital, onClose }) {
                                 </button>
                                 <button
                                     onClick={handleBook}
-                                    disabled={booking}
-                                    className="flex-2 px-8 py-3 bg-blue-600 text-white font-bold rounded-2xl text-sm hover:bg-blue-700 transition-all shadow-lg shadow-blue-200 flex items-center justify-center gap-2"
+                                    disabled={booking || !extractedData.time || availableSlots.length === 0}
+                                    className="flex-2 px-8 py-3 bg-blue-600 text-white font-bold rounded-2xl text-sm hover:bg-blue-700 transition-all shadow-lg shadow-blue-200 flex items-center justify-center gap-2 disabled:opacity-50 disabled:cursor-not-allowed disabled:shadow-none"
                                 >
                                     {booking && <Loader2 className="w-4 h-4 animate-spin" />}
                                     Confirm Appointment
