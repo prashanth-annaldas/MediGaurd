@@ -61,9 +61,11 @@ MedGuard System
     msg["To"] = receiver_email
 
     try:
-        print(f"DEBUG EMAIL: Attempting to connect to smtp.gmail.com:465 for {EMAIL_USER}...", flush=True)
-        # Use SMTP_SSL for port 465 (secure connection)
-        with smtplib.SMTP_SSL("smtp.gmail.com", 465) as server:
+        print(f"DEBUG EMAIL: Attempting to connect to smtp.gmail.com:587 for {EMAIL_USER}...", flush=True)
+        # Use SMTP with STARTTLS for port 587 (Render firewall compatible)
+        with smtplib.SMTP("smtp.gmail.com", 587) as server:
+            server.ehlo()
+            server.starttls()
             server.login(EMAIL_USER, EMAIL_PASS)
             server.send_message(msg)
         print(f"✅ Appointment email sent to {receiver_email} for Appointment #{appointment_id}", flush=True)
