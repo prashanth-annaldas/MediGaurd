@@ -119,7 +119,8 @@ class PatientReport(Base):
     __tablename__ = "patient_reports"
 
     id = Column(Integer, primary_key=True, index=True)
-    appointment_id = Column(Integer, ForeignKey("appointments.id"), index=True)
+    user_id = Column(Integer, ForeignKey("users.id"), index=True, nullable=True)
+    appointment_id = Column(Integer, ForeignKey("appointments.id"), index=True, nullable=True)
     file_path = Column(String)
     uploaded_at = Column(String)
 

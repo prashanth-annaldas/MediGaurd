@@ -1,6 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { Calendar, Clock, User, Phone, CheckCircle, XCircle, FileText, ExternalLink, MapPin } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
+import { Upload, Trash2, FileText as FileIcon } from 'lucide-react';
 import Layout from '../layout/Layout';
 import useStore from '../../store/useStore';
 
@@ -10,11 +11,16 @@ export default function UserAppointments() {
     const [appointments, setAppointments] = useState([]);
     const [loading, setLoading] = useState(true);
     const [error, setError] = useState(null);
+    const [activeTab, setActiveTab] = useState('appointments'); // 'appointments' or 'reports'
+    const [reports, setReports] = useState([]);
+    const [uploading, setUploading] = useState(false);
+    const fileInputRef = React.useRef(null);
     const { token, user } = useStore();
     const navigate = useNavigate();
 
     useEffect(() => {
         fetchAppointments();
+        fetchReports();
     }, [token]);
 
     const fetchAppointments = async () => {
@@ -36,6 +42,51 @@ export default function UserAppointments() {
             setLoading(false);
         }
     };
+
+    const fetchReports = async () => {
+        if (!token) return;
+        try {
+            const res = await fetch(`${API_URL}/api/user/reports`, {
+                headers: { 'Authorization': `Bearer ${token}` }
+            });
+            if (res.ok) {
+                const data = await res.json();
+                setReports(data);
+            }
+        } catch (err) {
+            console.error("Failed to fetch reports:", err);
+        }
+    };
+
+    const handleFileUpload = async (e) => {
+        const files = Array.from(e.target.files);
+        if (files.length === 0) return;
+
+        setUploading(true);
+        const formData = new FormData();
+        files.forEach(file => formData.append('files', file));
+
+        try {
+            const res = await fetch(`${API_URL}/api/user/reports`, {
+                method: 'POST',
+                headers: { 'Authorization': `Bearer ${token}` },
+                body: formData
+            });
+
+            if (res.ok) {
+                fetchReports(); // Refresh the list
+            } else {
+                const errData = await res.json();
+                alert(errData.detail || 'Failed to upload reports');
+            }
+        } catch (err) {
+            alert('Upload failed: ' + err.message);
+        } finally {
+            setUploading(false);
+            if (fileInputRef.current) fileInputRef.current.value = '';
+        }
+    };
+
 
     const formatTime12h = (time24) => {
         if (!time24 || time24 === "null") return "TBD";
@@ -60,14 +111,118 @@ export default function UserAppointments() {
     return (
         <Layout title="My Appointments">
             <div className="max-w-7xl mx-auto py-6 px-4">
-                <div className="mb-8">
-                    <h1 className="text-2xl font-bold text-[var(--text-primary)]">My Medical Appointments</h1>
-                    <p className="text-[var(--text-muted)] text-sm mt-1">
-                        View your booking history and access digital prescriptions.
-                    </p>
+                <div className="mb-6 flex flex-col md:flex-row md:items-end justify-between gap-4 border-b border-navy-700/50 pb-4">
+                    <div>
+                        <h1 className="text-2xl font-bold text-[var(--text-primary)]">My Medical Records</h1>
+                        <p className="text-[var(--text-muted)] text-sm mt-1">
+                            Manage your appointments, prescriptions, and medical reports.
+                        </p>
+                    </div>
+                    <div className="flex bg-navy-800 p-1 rounded-xl">
+                        <button
+                            onClick={() => setActiveTab('appointments')}
+                            className={`px-4 py-2 rounded-lg text-sm font-medium transition-all ${activeTab === 'appointments' ? 'bg-teal-500 text-navy-950 shadow-md' : 'text-gray-400 hover:text-white'}`}
+                        >
+                            Appointments
+                        </button>
+                        <button
+                            onClick={() => setActiveTab('reports')}
+                            className={`px-4 py-2 rounded-lg text-sm font-medium transition-all ${activeTab === 'reports' ? 'bg-teal-500 text-navy-950 shadow-md' : 'text-gray-400 hover:text-white'}`}
+                        >
+                            My Reports
+                        </button>
+                    </div>
                 </div>
 
-                {loading ? (
+                {activeTab === 'reports' ? (
+                    <div className="space-y-6">
+                        {/* Upload Section */}
+                        <div className="glass-card p-6">
+                            <h2 className="text-lg font-bold text-[var(--text-primary)] mb-4 flex items-center gap-2">
+                                <Upload className="text-teal-400" size={20} /> Upload New Report
+                            </h2>
+                            <div
+                                onClick={() => !uploading && fileInputRef.current?.click()}
+                                className={`border-2 border-dashed rounded-2xl p-8 text-center transition-all ${uploading ? 'border-navy-600 bg-navy-800/50 cursor-wait' : 'border-navy-700 hover:border-teal-500/50 hover:bg-teal-500/5 cursor-pointer group'}`}
+                            >
+                                <input
+                                    type="file"
+                                    ref={fileInputRef}
+                                    className="hidden"
+                                    multiple
+                                    accept="application/pdf,image/*"
+                                    onChange={handleFileUpload}
+                                    disabled={uploading}
+                                />
+                                {uploading ? (
+                                    <div className="flex flex-col items-center">
+                                        <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-teal-500 mb-3"></div>
+                                        <p className="text-teal-400 font-medium">Uploading files...</p>
+                                    </div>
+                                ) : (
+                                    <>
+                                        <div className="w-12 h-12 bg-navy-800 rounded-xl flex items-center justify-center mx-auto mb-3 group-hover:scale-110 transition-transform">
+                                            <Upload className="text-teal-500" />
+                                        </div>
+                                        <p className="text-sm font-medium text-[var(--text-primary)]">Click to browse or drop files here</p>
+                                        <p className="text-xs text-[var(--text-muted)] mt-1">Supported formats: PDF, JPG, PNG.</p>
+                                    </>
+                                )}
+                            </div>
+                        </div>
+
+                        {/* List Section */}
+                        <div className="glass-card p-6">
+                            <h2 className="text-xl font-bold text-[var(--text-primary)] mb-6 flex items-center gap-2">
+                                <FileIcon className="text-teal-400" /> Document History
+                            </h2>
+                            {reports.length === 0 ? (
+                                <div className="text-center py-12 rounded-2xl bg-navy-900/50 border border-navy-700">
+                                    <FileIcon className="w-12 h-12 text-navy-600 mx-auto mb-3" />
+                                    <p className="text-[var(--text-muted)]">No medical reports uploaded yet.</p>
+                                </div>
+                            ) : (
+                                <div className="grid gap-3">
+                                    {reports.map((report) => (
+                                        <div key={report.id} className="flex items-center justify-between p-4 rounded-xl border border-navy-700 bg-[var(--bg-card)] hover:border-teal-500/30 transition-colors">
+                                            <div className="flex items-start gap-3">
+                                                <div className="w-10 h-10 rounded-lg bg-teal-500/10 flex items-center justify-center text-teal-400 shrink-0">
+                                                    <FileIcon size={20} />
+                                                </div>
+                                                <div>
+                                                    <p className="font-medium text-[var(--text-primary)] truncate max-w-[200px] md:max-w-md" title={report.filename}>
+                                                        {report.filename}
+                                                    </p>
+                                                    <div className="flex items-center gap-3 text-xs text-[var(--text-muted)] mt-1">
+                                                        <span>{new Date(report.uploaded_at).toLocaleDateString()}</span>
+                                                        <span className="w-1 h-1 rounded-full bg-navy-600"></span>
+                                                        <span className={report.source === 'Doctor' ? 'text-blue-400' : 'text-teal-400'}>
+                                                            Uploaded by {report.source}
+                                                        </span>
+                                                        {report.doctor_name && (
+                                                            <>
+                                                                <span className="w-1 h-1 rounded-full bg-navy-600"></span>
+                                                                <span>Dr. {report.doctor_name}</span>
+                                                            </>
+                                                        )}
+                                                    </div>
+                                                </div>
+                                            </div>
+                                            <a
+                                                href={`${API_URL}/api/files/${report.file_path}`}
+                                                target="_blank"
+                                                rel="noopener noreferrer"
+                                                className="px-3 py-1.5 rounded-lg bg-navy-800 text-teal-400 text-xs font-medium hover:bg-navy-700 transition-colors flex items-center gap-1.5"
+                                            >
+                                                <ExternalLink size={14} /> View
+                                            </a>
+                                        </div>
+                                    ))}
+                                </div>
+                            )}
+                        </div>
+                    </div>
+                ) : loading ? (
                     <div className="flex justify-center items-center h-64">
                         <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-teal-500"></div>
                     </div>

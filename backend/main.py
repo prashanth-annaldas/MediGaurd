@@ -2023,3 +2023,80 @@ def get_patients(db: Session = Depends(get_db), current_user: models.User = Depe
         for p in patients
     ]
 
+# -------------------------------------------------------------------
+# USER REPORTS (My Reports)
+# -------------------------------------------------------------------
+
+@app.get("/api/user/reports")
+def get_user_reports(db: Session = Depends(get_db), current_user: models.User = Depends(auth.get_current_user)):
+    """Fetch all reports for the patient: those they uploaded + those attached to their past appointments by doctors."""
+    # Reports directly uploaded by user
+    user_reports = db.query(models.PatientReport).filter(models.PatientReport.user_id == current_user.id).all()
+    
+    # Reports attached to past appointments
+    appts = db.query(models.Appointment).filter(models.Appointment.user_id == current_user.id).all()
+    appt_ids = [a.id for a in appts]
+    
+    appt_reports = []
+    if appt_ids:
+        appt_reports = db.query(models.PatientReport).filter(
+            models.PatientReport.appointment_id.in_(appt_ids),
+            models.PatientReport.user_id.is_(None) # Prevent duplication if a report has both
+        ).all()
+        
+    all_reports = user_reports + appt_reports
+    # Sort descending by upload date
+    all_reports.sort(key=lambda r: r.uploaded_at or "", reverse=True)
+    
+    result = []
+    for r in all_reports:
+        appt = None
+        if r.appointment_id:
+            appt = db.query(models.Appointment).filter(models.Appointment.id == r.appointment_id).first()
+            
+        result.append({
+            "id": r.id,
+            "file_path": r.file_path,
+            "filename": os.path.basename(r.file_path) if r.file_path else "Unknown",
+            "uploaded_at": r.uploaded_at,
+            "source": "Self" if r.user_id else ("Doctor" if appt else "Unknown"),
+            "doctor_name": appt.doctor_name if appt else None,
+            "specialization": appt.specialization if appt else None,
+            "date": appt.date if appt else None
+        })
+        
+    return result
+
+@app.post("/api/user/reports")
+async def upload_user_report(
+    files: List[UploadFile] = File(...),
+    db: Session = Depends(get_db), 
+    current_user: models.User = Depends(auth.get_current_user)
+):
+    """Allow users to upload their own medical reports."""
+    saved_reports = []
+    
+    for file in files:
+        if file.filename:
+            # Build unique filename
+            timestamp = int(datetime.datetime.utcnow().timestamp())
+            safe_name = f"user_{current_user.id}_{timestamp}_{file.filename}"
+            file_path = os.path.join(UPLOAD_DIR, safe_name)
+            
+            with open(file_path, "wb") as buffer:
+                shutil.copyfileobj(file.file, buffer)
+                
+            new_report = models.PatientReport(
+                user_id=current_user.id,
+                file_path=safe_name,
+                uploaded_at=datetime.datetime.utcnow().isoformat() + "Z"
+            )
+            db.add(new_report)
+            saved_reports.append(new_report)
+            
+    if saved_reports:
+        db.commit()
+        for r in saved_reports:
+            db.refresh(r)
+            
+    return {"message": f"Successfully uploaded {len(saved_reports)} report(s)."}
