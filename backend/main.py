@@ -10,7 +10,7 @@ import random
 import datetime
 import json
 from typing import Optional, List
-from fastapi import FastAPI, HTTPException, Depends, File, Form, UploadFile
+from fastapi import FastAPI, HTTPException, Depends, File, Form, UploadFile, BackgroundTasks
 from fastapi.middleware.cors import CORSMiddleware
 from pydantic import BaseModel
 from dotenv import load_dotenv
@@ -19,6 +19,7 @@ from database import engine, Base, get_db
 import models
 import auth
 import ml_model
+import email_service
 
 load_dotenv()
 
@@ -1396,7 +1397,7 @@ User Message: "{req.message}"
         }
 
 @app.post("/api/appointments", response_model=AppointmentResponse)
-def create_appointment(data: AppointmentCreate, db: Session = Depends(get_db), current_user: models.User = Depends(auth.get_current_user)):
+def create_appointment(data: AppointmentCreate, background_tasks: BackgroundTasks, db: Session = Depends(get_db), current_user: models.User = Depends(auth.get_current_user)):
     """Book a new appointment."""
     new_app = models.Appointment(
         user_id=current_user.id,
@@ -1414,6 +1415,19 @@ def create_appointment(data: AppointmentCreate, db: Session = Depends(get_db), c
     db.add(new_app)
     db.commit()
     db.refresh(new_app)
+    
+    # Send email notification asynchronously
+    background_tasks.add_task(
+        email_service.send_appointment_email,
+        patient_name=current_user.name,
+        patient_email=current_user.email,
+        doctor_name=data.doctor_name,
+        appointment_date=data.date,
+        appointment_time=data.time,
+        reason=data.raw_message,
+        appointment_id=new_app.id
+    )
+    
     return new_app
 
 @app.get("/api/appointments", response_model=List[AppointmentResponse])
