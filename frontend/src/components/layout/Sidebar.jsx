@@ -18,6 +18,7 @@ const navItems = [
     { to: '/beds', label: 'Bed Management', staffOnly: true },
     { to: '/patients', label: 'Register Patient', userOnly: true, alwaysShowForUser: true },
     { to: '/appointments', label: 'Appointments', userOnly: true, alwaysShowForUser: true },
+    { to: '/predict', label: 'Disease Prediction', userOnly: true, alwaysShowForUser: true },
     { to: '/appointments', label: 'Prescriptions', doctorOnly: true },
 ]
 

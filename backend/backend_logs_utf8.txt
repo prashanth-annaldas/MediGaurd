@@ -1,0 +1,54 @@
+﻿uvicorn : C:\Users\anna
+l\Documents\MedGaurd-ma
+in\backend\main.py:77: 
+FutureWarning: 
+At line:1 char:1
++ uvicorn main:app 
+--port 8001 --host 
+127.0.0.1 > 
+backend_logs.txt 2>&1
++ ~~~~~~~~~~~~~~~~~~~~~
+~~~~~~~~~~~~~~~~~~~~~~~
+~~~~~~~~~~~~~~~~~~~~~~~
+~~
+    + CategoryInfo     
+         : NotSpecifi  
+  ed: (C:\Users\anna   
+ l\...FutureWarning    
+: :String) [], Rem    
+oteException
+    + FullyQualifiedEr 
+   rorId : NativeComm  
+  andError
+ 
+
+All support for the 
+`google.generativeai` 
+package has ended. It 
+will no longer be 
+receiving 
+updates or bug fixes. 
+Please switch to the 
+`google.genai` package 
+as soon as possible.
+See README for more 
+details:
+
+https://github.com/goog
+le-gemini/deprecated-ge
+nerative-ai-python/blob
+/main/README.md
+
+  import 
+google.generativeai as 
+genai
+INFO:     Started 
+server process [19404]
+INFO:     Waiting for 
+application startup.
+INFO:     Application 
+startup complete.
+INFO:     Uvicorn 
+running on 
+http://127.0.0.1:8001 
+(Press CTRL+C to quit)

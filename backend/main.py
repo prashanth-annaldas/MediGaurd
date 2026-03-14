@@ -9,6 +9,9 @@ import math
 import random
 import datetime
 import json
+import joblib
+import pandas as pd
+import traceback
 from typing import Optional, List
 from fastapi import FastAPI, HTTPException, Depends, File, Form, UploadFile, BackgroundTasks
 from fastapi.middleware.cors import CORSMiddleware
@@ -22,6 +25,24 @@ import ml_model
 import email_service
 
 load_dotenv()
+
+# Load ML Disease Model
+BASE_DIR = os.path.dirname(os.path.abspath(__file__))
+disease_model = None
+symptom_encoder = None
+
+try:
+    model_path = os.path.join(BASE_DIR, "disease_model.pkl")
+    encoder_path = os.path.join(BASE_DIR, "symptom_encoder.pkl")
+    if os.path.exists(model_path) and os.path.exists(encoder_path):
+        # Disconnected local ML model as requested
+        # disease_model = joblib.load(model_path)
+        symptom_encoder = joblib.load(encoder_path)
+        print("✅ Symptom encoder loaded (ML Model disconnected)")
+    else:
+        print("⚠️ Disease prediction model files not found. Run train_model.py first.")
+except Exception as e:
+    print(f"❌ Failed to load disease prediction model: {e}")
 
 # Create tables
 Base.metadata.create_all(bind=engine)
@@ -42,6 +63,71 @@ app.add_middleware(
 
 # Include auth router
 app.include_router(auth.router)
+
+class SymptomInput(BaseModel):
+    symptoms: List[str]
+
+@app.get("/api/symptoms")
+def get_symptoms():
+    if not symptom_encoder:
+        raise HTTPException(status_code=503, detail="Symptom encoder not loaded")
+    return {"symptoms": list(symptom_encoder.classes_)}
+
+@app.post("/api/predict")
+async def predict(data: SymptomInput):
+    # ML Model Branch (Disconnected but kept for reference)
+    # try:
+    #     if disease_model and symptom_encoder:
+    #         cleaned_symptoms = [s.strip().lower() for s in data.symptoms if s.strip()]
+    #         if cleaned_symptoms:
+    #             binary_input = symptom_encoder.transform([cleaned_symptoms])
+    #             input_df = pd.DataFrame(binary_input, columns=symptom_encoder.classes_)
+    #             prediction = disease_model.predict(input_df)
+    #             # ml_result = prediction[0]
+    # except Exception:
+    #     pass
+
+    if not data.symptoms or len(data.symptoms) == 0:
+        return {"prediction": "Please provide valid symptoms."}
+
+    # Use Gemini API for prediction
+    try:
+        if not GEMINI_AVAILABLE or not gemini_model:
+            raise HTTPException(status_code=503, detail="Gemini AI is not available. Please check API key.")
+
+        symptoms_str = ", ".join(data.symptoms)
+        prompt = (
+            "Act as a professional medical diagnostic system. Analyze the following list of symptoms and predict the most likely disease or health condition.\n\n"
+            f"Symptoms: {symptoms_str}\n\n"
+            "CRITICAL INSTRUCTIONS:\n"
+            "1. Return ONLY the name of the disease or condition.\n"
+            "2. Do NOT include any explanations, greetings, disclaimers, or notes.\n"
+            "3. If multiple conditions fit, return only the most probable one.\n"
+            "4. If symptoms are nonsensical, return 'Unable to determine'.\n"
+            "5. Examples: 'Common Cold', 'Malaria', 'Diabetes Type 2'."
+        )
+
+        response = gemini_model.generate_content(prompt)
+        prediction_text = response.text.strip()
+        
+        # Robust cleanup to ensure ONLY the disease name is returned
+        # Remove markdown bold/italic if present
+        prediction_text = prediction_text.replace("**", "").replace("*", "").replace("`", "")
+        # Take only the first line if multiple were returned
+        prediction_text = prediction_text.split("\n")[0].strip()
+        # Remove trailing punctuation if it's just a dot
+        if prediction_text.endswith("."):
+            prediction_text = prediction_text[:-1]
+        
+        return {"prediction": prediction_text}
+
+    except HTTPException:
+        raise
+    except Exception as e:
+        error_msg = traceback.format_exc()
+        print(f"DEBUG: Gemini prediction error:\n{error_msg}")
+        # Final fallback to a generic message if even Gemini fails
+        raise HTTPException(status_code=500, detail=f"Prediction failed: {str(e)}\n{error_msg}")
 
 # Seed demo users on startup
 from sqlalchemy.orm import Session
@@ -108,11 +194,11 @@ def seed_users():
 
 seed_users()
 
-# Initialize ML Model
-ml_model.load_and_train_model()
+# Initialize ML Model (Disconnected)
+# ml_model.load_and_train_model()
 
-# Initialize ML Model
-ml_model.load_and_train_model()
+# Initialize ML Model (Disconnected)
+# ml_model.load_and_train_model()
 
 @app.middleware("http")
 async def log_requests(request, call_next):

@@ -19,6 +19,7 @@ import PatientRegistration from './components/staff/PatientRegistration'
 import DoctorPrescription from './components/doctor/DoctorPrescription'
 import UserAppointments from './components/user/UserAppointments'
 import UserPrescriptionView from './components/user/UserPrescriptionView'
+import DiseasePrediction from './components/user/DiseasePrediction'
 import BedManagement from './components/staff/BedManagement'
 import BedDetail from './components/public/BedDetail'
 import Landing from './components/public/Landing'
@@ -116,6 +117,7 @@ export default function App() {
             <Route path="/user/gemini" element={<ProtectedRoute allowedRoles={['USER']}><GeminiChat /></ProtectedRoute>} />
             <Route path="/user/patients" element={<ProtectedRoute allowedRoles={['USER']}><PatientRegistration /></ProtectedRoute>} />
             <Route path="/user/appointments" element={<ProtectedRoute allowedRoles={['USER']}><UserAppointments /></ProtectedRoute>} />
+            <Route path="/user/predict" element={<ProtectedRoute allowedRoles={['USER']}><DiseasePrediction /></ProtectedRoute>} />
             <Route path="/user/prescription/:appointmentId" element={<ProtectedRoute allowedRoles={['USER']}><UserPrescriptionView /></ProtectedRoute>} />
 
             {/* Legacy Fallback Redirects to new role-prefixed routes */}

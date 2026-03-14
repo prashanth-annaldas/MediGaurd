@@ -1,0 +1,14 @@
+First available model: models/gemini-2.5-flash
+Testing generation with models/gemini-2.5-flash...
+Success! Response: Fever and cough are very common symptoms that can indicate a wide range of conditions, primarily **respiratory infections**.
+
+Here are the most common diseases characterized by fever and cough, from mild to more severe:
+
+1.  **Common Cold:** A mild viral infection of the nose and throat. Symptoms often include a low-grade fever, cough (can be dry or productive), sore throat, runny nose, and sneezing.
+2.  **Influenza (Flu):** A more severe viral respiratory infection. Symptoms often come on suddenly and include high fever, body aches, fatigue, headache, and a dry cough.
+3.  **COVID-19:** Caused by the SARS-CoV-2 virus. Symptoms are highly variable but frequently include fever, cough (often dry), fatigue, and sometimes shortness of breath, sore throat, or loss of taste/smell.
+4.  **Acute Bronchitis:** Inflammation of the lining of the bronchial tubes, often following a cold or flu. It causes a persistent cough (often with mucus), which can last for weeks, and sometimes a low-grade fever.
+5.  **Pneumonia:** An infection that inflames the air sacs in one or both lungs. Symptoms can include high fever, chills, cough (often with phlegm), shortness of breath, and chest pain. This can be viral or bacterial.
+6.  **Whooping Cough (Pertussis):** A highly contagious bacterial infection characterized by severe, uncontrollable coughing fits, often followed by a "whooping" sound when inhaling. Fever may be present but isn't always prominent in later stages.
+
+**It's crucial to remember:** This is not a diagnosis. If you or someone you know is experiencing fever and cough, especially with other concerning symptoms like shortness of breath, chest pain, or a high/persistent fever, it's important to consult a healthcare professional for proper diagnosis and treatment.
