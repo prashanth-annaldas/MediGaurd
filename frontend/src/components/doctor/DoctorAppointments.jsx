@@ -29,7 +29,7 @@ export default function DoctorAppointments() {
             const data = await res.json();
 
             // Backend already filters by doctor name + hospital — no client-side filter needed
-            // Sort by date/time (most recent first)
+            // Sort by date/time (most recent first
             data.sort((a, b) => new Date(`${b.date}T${b.time}`) - new Date(`${a.date}T${a.time}`));
             setAppointments(data);
         } catch (err) {
