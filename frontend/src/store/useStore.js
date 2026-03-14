@@ -18,21 +18,21 @@ const useStore = create((set, get) => ({
     sidebarCollapsed: false,
 
     // ── User Auth ───────────────────────────────────────────────────────────
-    user: JSON.parse(sessionStorage.getItem('user')) || null,
-    token: sessionStorage.getItem('token') || null,
+    user: JSON.parse(localStorage.getItem('user')) || null,
+    token: localStorage.getItem('token') || null,
     setUser: (user, token) => {
         if (user) {
-            sessionStorage.setItem('user', JSON.stringify(user));
-            sessionStorage.setItem('token', token);
+            localStorage.setItem('user', JSON.stringify(user));
+            localStorage.setItem('token', token);
         } else {
-            sessionStorage.removeItem('user');
-            sessionStorage.removeItem('token');
+            localStorage.removeItem('user');
+            localStorage.removeItem('token');
         }
         set({ user, token });
     },
     logout: () => {
-        sessionStorage.removeItem('user');
-        sessionStorage.removeItem('token');
+        localStorage.removeItem('user');
+        localStorage.removeItem('token');
         set({ user: null, token: null });
     },
 
@@ -292,13 +292,13 @@ const useStore = create((set, get) => ({
     toggleSidebar: () => set(state => ({ sidebarCollapsed: !state.sidebarCollapsed })),
 
     // ── Selected Hospital (User View) ───────────────────────────────────────
-    selectedHospital: JSON.parse(sessionStorage.getItem('selectedHospital')) || null,
+    selectedHospital: JSON.parse(localStorage.getItem('selectedHospital')) || null,
     setSelectedHospital: (hospital) => {
-        sessionStorage.setItem('selectedHospital', JSON.stringify(hospital));
+        localStorage.setItem('selectedHospital', JSON.stringify(hospital));
         set({ selectedHospital: hospital });
     },
     clearSelectedHospital: () => {
-        sessionStorage.removeItem('selectedHospital');
+        localStorage.removeItem('selectedHospital');
         set({ selectedHospital: null });
     },
 
