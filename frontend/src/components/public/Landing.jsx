@@ -1,9 +1,9 @@
 import React from 'react';
 import { Link, Navigate } from 'react-router-dom';
-import { Activity } from 'lucide-react';
 import { Hero3D } from './Hero3D';
 import ShaderBackground from '../ui/shader-background';
 import useStore from '../../store/useStore';
+import Logo from '../layout/logo.png';
 
 export default function Landing() {
     const user = useStore(state => state.user);
@@ -25,8 +25,8 @@ export default function Landing() {
             <nav className="fixed top-0 w-full p-6 flex justify-between items-center z-50 px-8 lg:px-12 backdrop-blur-md bg-white/70 border-b border-slate-100">
                 {/* Logo Area */}
                 <div className="flex items-center gap-3">
-                    <div className="w-10 h-10 bg-emerald-500 rounded-xl flex items-center justify-center shadow-lg shadow-slate-100/50">
-                        <Activity className="w-6 h-6 text-white" />
+                    <div className="w-10 h-10 bg-emerald-500 rounded-xl flex items-center justify-center shadow-lg shadow-slate-100/50 p-1.5">
+                        <img src={Logo} alt="Logo" className="w-full h-full object-contain" />
                     </div>
                     <span className="text-xl md:text-2xl font-bold tracking-tight text-black" style={{ color: 'black' }}>
                         MedGuard<span className="text-black" style={{ color: 'black' }}>AI</span>

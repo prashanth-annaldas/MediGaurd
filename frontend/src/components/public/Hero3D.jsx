@@ -4,14 +4,14 @@ import { TypingEffect } from "../ui/typing-effect";
 
 export function Hero3D() {
   return (
-    <div className="w-full min-h-[700px] bg-transparent relative overflow-hidden flex flex-col items-center justify-center py-20 px-6">
+    <div className="w-full min-h-[700px] bg-transparent relative overflow-hidden flex flex-col items-start justify-start pt-32 pb-20 px-8 lg:px-16">
       {/* Spotlight removed to check source of blue glow */}
 
 
-      <div className="container mx-auto relative z-10 flex flex-col lg:flex-row items-center gap-12">
+      <div className="container mx-auto relative z-10 flex flex-col lg:flex-row items-start gap-12">
         {/* Left column: Text content */}
-        <div className="w-full lg:w-1/2 text-left space-y-8">
-          <h1 className="text-5xl md:text-7xl font-extrabold tracking-tighter text-black leading-tight" style={{ color: 'black' }}>
+        <div className="w-full lg:w-1/2 text-left space-y-6 pt-10">
+          <h1 className="text-6xl md:text-8xl font-extrabold tracking-tighter text-black leading-none" style={{ color: 'black' }}>
             <TypingEffect 
               text="Intelligent Care" 
               speed={70} 
