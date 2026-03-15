@@ -27,11 +27,6 @@ export function Hero3D() {
             />
           </p>
           
-          <div className="pt-4 opacity-0 animate-fade-in fill-mode-forwards" style={{ animationDelay: '3.5s', animationDuration: '1s' }}>
-             <button className="bg-emerald-500 hover:bg-emerald-600 text-white font-bold py-4 px-10 rounded-2xl transition-all shadow-xl shadow-emerald-500/20">
-                Explore Technology
-             </button>
-          </div>
         </div>
 
         {/* Right column: 3D Robot Container */}

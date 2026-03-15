@@ -38,7 +38,6 @@ export function TypingEffect({
   return (
     <span className={className}>
       {displayedText}
-      <span className="animate-pulse border-r-2 border-black ml-1"></span>
     </span>
   );
 }
