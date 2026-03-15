@@ -136,13 +136,20 @@ export default function Appointments() {
                                                             {appt.specialization || 'General'}
                                                         </span>
                                                     </td>
-                                                    <td className="px-6 py-4 whitespace-nowrap">
-                                                        <span className={`px-2.5 py-1 inline-flex text-xs leading-5 font-semibold rounded-full ${appt.status === 'confirmed' ? 'bg-green-100 text-green-800' :
-                                                            appt.status === 'pending' ? 'bg-amber-100 text-amber-800' :
-                                                                'bg-gray-100 text-gray-800'
-                                                            }`}>
-                                                            {appt.status.charAt(0).toUpperCase() + appt.status.slice(1)}
-                                                        </span>
+                                                    <td className="px-6 py-4 whitespace-nowrap text-right text-sm font-medium">
+                                                        <button 
+                                                            onClick={() => {
+                                                                const time12 = formatTime12h(appt.time);
+                                                                const hospitalPhone = user?.phone || "[Hospital Phone]"; // Fallback
+                                                                const message = `Hi ${appt.patient_name || 'Patient'},\n\nYour appointment is due today!\n\nThis is a friendly reminder about your appointment at ${appt.hospital_name} with Dr ${appt.doctor_name} at ${time12}. Please be available 15 minutes prior to your appointed time.\n\nTo reschedule or cancel your appointment, please call ${hospitalPhone}.\n\nRegards,\n\n${user?.name || 'Staff'}\n${user?.designation || 'Staff'}\n${appt.hospital_name}`;
+                                                                navigator.clipboard.writeText(message);
+                                                                alert('Reminder copied to clipboard!');
+                                                            }}
+                                                            className="text-emerald-600 hover:text-emerald-900 bg-emerald-50 px-3 py-1.5 rounded-lg transition-colors flex items-center gap-1.5 ml-auto"
+                                                        >
+                                                            <Activity className="w-4 h-4" />
+                                                            Remind
+                                                        </button>
                                                     </td>
                                                 </tr>
                                             ))}
