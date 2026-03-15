@@ -45,7 +45,6 @@ class Token(BaseModel):
     name: str
     email: str
     hospital_name: Optional[str] = None
-    designation: Optional[str] = None
 
 class TokenData(BaseModel):
     email: Optional[str] = None
@@ -57,7 +56,6 @@ class UserCreate(BaseModel):
     password: str
     role: Optional[str] = "USER"
     hospital_name: Optional[str] = None
-    designation: Optional[str] = None
 
 def get_current_user(token: str = Depends(oauth2_scheme), db: Session = Depends(get_db)):
     credentials_exception = HTTPException(
@@ -143,8 +141,7 @@ def register(user: UserCreate, db: Session = Depends(get_db)):
         email=user.email, 
         password=hashed_password,
         role=user.role,
-        hospital_name=user.hospital_name if user.role in ["ADMIN", "STAFF", "DOCTOR"] else None,
-        designation=user.designation
+        hospital_name=user.hospital_name if user.role in ["ADMIN", "STAFF", "DOCTOR"] else None
     )
     db.add(new_user)
     db.commit()
@@ -155,8 +152,7 @@ def register(user: UserCreate, db: Session = Depends(get_db)):
         data={"sub": new_user.email, "role": new_user.role}, expires_delta=access_token_expires
     )
     
-    
-    return {"access_token": access_token, "token_type": "bearer", "role": new_user.role, "userId": new_user.id, "name": new_user.name, "email": new_user.email, "hospital_name": new_user.hospital_name, "designation": new_user.designation}
+    return {"access_token": access_token, "token_type": "bearer", "role": new_user.role, "userId": new_user.id, "name": new_user.name, "email": new_user.email, "hospital_name": new_user.hospital_name}
 
 class LoginRequest(BaseModel):
     email: str
@@ -175,4 +171,4 @@ def login(login_req: LoginRequest, db: Session = Depends(get_db)):
     access_token = create_access_token(
         data={"sub": user.email, "role": user.role}, expires_delta=access_token_expires
     )
-    return {"access_token": access_token, "token_type": "bearer", "role": user.role, "userId": user.id, "name": user.name, "email": user.email, "hospital_name": user.hospital_name, "designation": user.designation}
+    return {"access_token": access_token, "token_type": "bearer", "role": user.role, "userId": user.id, "name": user.name, "email": user.email, "hospital_name": user.hospital_name}

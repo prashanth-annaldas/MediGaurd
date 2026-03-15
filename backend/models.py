@@ -10,7 +10,6 @@ class User(Base):
     password = Column(String)
     role = Column(String, default="USER")
     hospital_name = Column(String, nullable=True)
-    designation = Column(String, nullable=True)
 
 class HospitalHistory(Base):
     __tablename__ = "hospital_history"
@@ -72,7 +71,6 @@ class Hospital(Base):
     fee_max = Column(Integer)
     total_doctors = Column(Integer)
     open_24x7 = Column(Integer) # 0 or 1
-    phone = Column(String, nullable=True)
 
 class Appointment(Base):
     __tablename__ = "appointments"

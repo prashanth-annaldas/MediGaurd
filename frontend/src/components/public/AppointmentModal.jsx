@@ -100,20 +100,27 @@ export default function AppointmentModal({ hospital, onClose }) {
 
             const formattedTime = formatTime12h(appointmentData.time);
 
+            const emailMessage = `Hi ${user?.name || 'Patient'},
+
+Your appointment is due today!
+
+This is a friendly reminder about your appointment at ${hospital.name || 'our hospital'} with Dr. ${appointmentData.doctor_name || 'Any Available'} at ${formattedTime}. Please be available 15 minutes prior to your appointed time.
+
+To reschedule or cancel your appointment, please call ${hospital.phone || 'the hospital front desk'}.
+
+Regards,
+
+MediGuard Admin
+Hospital Management
+${hospital.name || 'Hospital'}`;
+
             await emailjs.send(serviceId, templateId, {
-                name: user?.name || 'Patient',
-                title: `New Appointment – ${appointmentData.specialization || 'General'}`,
-                time: formattedTime,
-                appointment_time: formattedTime,
-                patient_email: user?.email || 'N/A',
+                patient_name: user?.name || 'Patient',
+                hospital_name: hospital.name || 'our hospital',
                 doctor_name: appointmentData.doctor_name || 'Any Available',
-                doctor: appointmentData.doctor_name || 'Any Available',
-                date: appointmentData.date || 'N/A',
-                appointment_date: appointmentData.date || 'N/A',
-                reason: appointmentData.specialization || message || 'General Consultation',
-                appointment_id: appointmentData.id || 'N/A',
-                hospital: hospital.name || 'N/A',
-                message: `Patient: ${user?.name || 'N/A'} | Doctor: ${appointmentData.doctor_name || 'Any Available'} | Date: ${appointmentData.date} | Time: ${formattedTime} | Hospital: ${hospital.name}`,
+                time: formattedTime,
+                phone: hospital.phone || 'the hospital front desk',
+                message: emailMessage,
             }, publicKey);
 
             console.log('✅ EmailJS: Appointment notification email sent successfully!');
